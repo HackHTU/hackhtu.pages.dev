@@ -17,13 +17,14 @@ import {
   handlePrivateText,
   handleVerificationCallback,
 } from "./verification";
+import { handleModerationCallback } from "./violation";
 
 const HELP_TEXT = [
   "我是 HackHTU 群管理机器人。",
   "",
   "群内功能：",
   "- 新成员进群需要私聊完成验证",
-  "- 自动删除敏感关键词并封禁发送者",
+  "- 违规内容（博彩、病毒、诈骗、刷屏等）自动删除并警告，累计三次封禁；通知带内容引用和「解除警告/解除封禁」按钮",
   "- /ban [分钟]：回复某人或 /ban <用户ID> [分钟] 禁言",
   "- /banl：回复某人或 /banl <用户ID> 踢出群聊",
   "- /unban：回复某人或 /unban <用户ID> 解除禁言/封禁",
@@ -146,8 +147,8 @@ const handleGroupMessage = async (
   const text = msg.text ?? "";
 
   // 命令也先过关键词审核：不能因为消息以 / 开头就绕过黑名单
-  // （例如 `/foo 加微信 usdt`）。管理员命中时 moderateMessage 会自己放行。
-  if (await moderateMessage(bot, msg, config)) {
+  // （例如 `/foo 博彩 usdt`）。管理员命中时 moderateMessage 会自己放行。
+  if (await moderateMessage(bot, db, msg, config)) {
     return;
   }
 
@@ -182,7 +183,16 @@ export const handleUpdate = async (
       data: update.callback_query.data,
     });
 
-    await handleVerificationCallback(bot, db, update.callback_query);
+    // 违规通知上的按钮先处理；不是这类回调再进验证流程。
+    const moderated = await handleModerationCallback(
+      bot,
+      db,
+      update.callback_query
+    );
+
+    if (!moderated) {
+      await handleVerificationCallback(bot, db, update.callback_query);
+    }
 
     return;
   }

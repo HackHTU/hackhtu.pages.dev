@@ -5,6 +5,7 @@ export {
   aiMemory,
   aiSummary,
   botMeta,
+  moderationStrikes,
   rssHistory,
   verifications,
 } from "./bot";

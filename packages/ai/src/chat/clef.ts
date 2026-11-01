@@ -53,7 +53,8 @@ export const createClefDecisionModel = (
 
         return part.type === "json" ? JSON.stringify(part.value) : "";
       })
-      .join("\n");
+      // state 的每个 part 是一条消息，用空行隔开，保持消息边界可见。
+      .join("\n\n");
 
     const questions = Object.fromEntries(
       Object.entries(options.questions).map(([id, question]) => [

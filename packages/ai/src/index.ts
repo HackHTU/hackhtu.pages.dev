@@ -18,7 +18,7 @@ export type { AiToolContext } from "./chat/tools";
 
 export { triageMessage } from "./chat/triage";
 
-export type { TriageResult } from "./chat/triage";
+export type { TriageInput, TriageResult } from "./chat/triage";
 
 export { compressLastMessage } from "./context/compress";
 

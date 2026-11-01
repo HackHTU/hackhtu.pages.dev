@@ -1,5 +1,5 @@
 import { addHistory, renderMessage, triageMessage } from "@hackhtu/ai";
-import type { TriageResult } from "@hackhtu/ai";
+import type { TriageInput, TriageResult } from "@hackhtu/ai";
 import { aiContext } from "@hackhtu/db";
 import type { Database } from "@hackhtu/db";
 import { desc, eq } from "drizzle-orm";
@@ -8,7 +8,7 @@ import type { Message } from "grammy/types";
 
 import type { BotConfig } from "../../config";
 import type { Bindings } from "../../env";
-import { handleSpamMessage } from "../../handlers/moderation";
+import { handleViolation } from "../../handlers/violation";
 import { logDebug, logError, logInfo, logWarn } from "../../lib/log";
 import { transcribeVoice } from "./media/attachments";
 import { hasContent, hasMedia, senderRole, toChatMessage } from "./message";
@@ -18,12 +18,16 @@ import { isMessageDone, markMessageDone } from "./state";
 const TRIAGE_ROWS = 24;
 const TRIAGE_CHARS = 8000;
 
-const buildTriageState = async (
+/**
+ * 组装 decision model 的输入：从聊天记录里取最近的上下文消息，
+ * 再拼上候选消息。历史按字符数截断，优先保留最新的。
+ */
+const buildTriageInput = async (
   db: Database,
   chatId: number,
   candidate: string,
   voice: boolean
-): Promise<string> => {
+): Promise<TriageInput> => {
   const rows = await db
     .select({ content: aiContext.content })
     .from(aiContext)
@@ -31,23 +35,22 @@ const buildTriageState = async (
     .orderBy(desc(aiContext.id))
     .limit(TRIAGE_ROWS);
 
-  const joined = rows
-    .toReversed()
-    .map((row) => row.content)
-    .join("\n");
+  const lines = rows.toReversed().map((row) => row.content);
 
-  const history =
-    joined.length > TRIAGE_CHARS ? joined.slice(-TRIAGE_CHARS) : joined;
+  // 从最新往旧收集，超过 TRIAGE_CHARS 就丢掉更旧的；候选消息本身不占预算。
+  const history: string[] = [];
+  let total = 0;
 
-  return [
-    "最近的聊天记录：",
-    history.length === 0 ? "（暂无）" : history,
-    "",
-    voice
-      ? "刚收到的候选消息（语音转写，可能有同音字）："
-      : "刚收到的候选消息：",
-    candidate,
-  ].join("\n");
+  for (const line of lines.toReversed()) {
+    if (total + line.length > TRIAGE_CHARS && history.length > 0) {
+      break;
+    }
+
+    total += line.length;
+    history.unshift(line);
+  }
+
+  return { history, candidate, voice };
 };
 
 export interface AiMessageOptions {
@@ -79,7 +82,7 @@ export const isDirectAttention = (bot: Bot, msg: Message): boolean => {
   return msg.reply_to_message?.from?.id === bot.botInfo.id;
 };
 
-/** 群聊里要不要回复、是不是广告；两个问题交给同一次 decision model 调用。 */
+/** 群聊里要不要回复、是否违规；两个问题交给同一次 decision model 调用。 */
 const decideTriage = async (
   env: Bindings,
   db: Database,
@@ -90,27 +93,27 @@ const decideTriage = async (
 ): Promise<TriageResult> => {
   // 白名单群、发送者是真人这两个前提，已经在 handlers/update.ts 里过滤过了。
   try {
-    const state = await buildTriageState(db, msg.chat.id, candidate, voice);
-    const result = await triageMessage(env, config, state);
+    const input = await buildTriageInput(db, msg.chat.id, candidate, voice);
+    const result = await triageMessage(env, config, input);
 
     logDebug("ai.triage", {
       chatId: msg.chat.id,
       reply: result.reply,
-      spam: result.spam,
+      violation: result.violation,
     });
 
     return result;
   } catch (error) {
     logWarn("ai.triage.failed", { chatId: msg.chat.id }, error);
 
-    return { reply: false, spam: false };
+    return { reply: false, violation: false };
   }
 };
 
-type GateResult = "reply" | "quiet" | "spam";
+type GateResult = "reply" | "quiet" | "violation";
 
 /**
- * 群聊前置决策：广告交给拦截流程，明确不回复的消息也留档，其余继续生成。
+ * 群聊前置决策：违规交给三次警告处置，明确不回复的消息也留档，其余继续生成。
  */
 const gateGroupMessage = async (
   bot: Bot,
@@ -123,12 +126,12 @@ const gateGroupMessage = async (
 ): Promise<GateResult> => {
   const triage = await decideTriage(env, db, config, msg, rendered, voice);
 
-  if (triage.spam) {
-    logInfo("ai.spam", { chatId: msg.chat.id, fromId: msg.from?.id });
+  if (triage.violation) {
+    logInfo("ai.violation", { chatId: msg.chat.id, fromId: msg.from?.id });
 
-    await handleSpamMessage(bot, msg, config);
+    await handleViolation(bot, db, msg, config, "疑似违规内容（模型判定）");
 
-    return "spam";
+    return "violation";
   }
 
   return triage.reply ? "reply" : "quiet";
@@ -136,8 +139,8 @@ const gateGroupMessage = async (
 
 /**
  * 群聊/私聊的 AI 入口：
- * 1. 群聊先让 decision model 判断要不要回复、是不是广告；
- * 2. 把这条消息按聊天记录格式写入历史（广告除外）；
+ * 1. 群聊先让 decision model 结合上下文判断要不要回复、候选消息是否违规；
+ * 2. 把这条消息按聊天记录格式写入历史（违规消息除外）；
  * 3. 跑 AI SDK 对话（带工具），第一段正文到达时建消息并流式编辑；
  * 4. 把机器人自己发的消息写回历史。
  */
@@ -202,7 +205,7 @@ export const handleAiMessage = async (
     gate = await gateGroupMessage(bot, env, db, config, msg, rendered, isVoice);
   }
 
-  if (gate === "spam") {
+  if (gate === "violation") {
     await markMessageDone(db, msg.chat.id, msg.message_id);
 
     return;

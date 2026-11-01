@@ -76,6 +76,23 @@ export const verifications = sqliteTable(
 );
 
 /**
+ * 违规警告计数（三次警告制）：每个群每个用户一行。
+ *
+ * 命中违规内容时 strikes 加一：1、2 次只删除消息并警告，累计到 3 次封禁。
+ * 管理员按「解除警告 / 解除封禁」按钮时把 strikes 清零重新计数。
+ */
+export const moderationStrikes = sqliteTable(
+  "moderation_strikes",
+  {
+    chatId: integer("chat_id").notNull(),
+    userId: integer("user_id").notNull(),
+    strikes: integer("strikes").notNull().default(0),
+    updatedAt: integer("updated_at").notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.chatId, table.userId] })]
+);
+
+/**
  * bot 自己的键值元数据，例如 RSS 上次执行时间。
  */
 export const botMeta = sqliteTable("bot_meta", {

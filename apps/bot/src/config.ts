@@ -18,20 +18,18 @@ const DEFAULT_RSS_FEEDS = {
 const DEFAULT_NOTIFY_CHATS = ["-1001918752754", "-1004957193457"];
 
 /**
- * 本地关键词黑名单。命中后删除消息并临时封禁发送者。
+ * 本地关键词黑名单：只留违反法律法规、必须立刻处置的词。
+ * 广告、R18、玩梗交给 decision model 结合上下文判断，命中后也走三次警告流程。
  * 全部按小写比较，不要在这里写正则。
  */
 export const BANNED_KEYWORDS = [
-  "广告",
-  "推广",
   "博彩",
   "赌场",
-  "色情",
+  "六合彩",
   "代考",
   "刷单",
-  "日结",
-  "加微信",
-  "usdt",
+  "木马",
+  "钓鱼链接",
 ];
 
 export const hasText = (value: string | undefined): value is string =>

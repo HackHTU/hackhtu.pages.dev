@@ -22,6 +22,13 @@
       "when": 1793423277418,
       "tag": "0002_milky_viper",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1793527479257,
+      "tag": "0003_lethal_mac_gargan",
+      "breakpoints": true
     }
   ]
 }

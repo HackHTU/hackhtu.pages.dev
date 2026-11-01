@@ -7,15 +7,15 @@ import { z } from "zod";
 
 import { BANNED_KEYWORDS } from "../config";
 import type { BotConfig } from "../config";
-import { logError, logInfo, logWarn } from "../lib/log";
+import { logInfo, logWarn } from "../lib/log";
 import {
   adminIds,
-  banMember,
   isAdmin,
   kickMember,
   muteMember,
   unmuteMember,
 } from "../lib/telegram";
+import { handleViolation } from "./violation";
 
 const resolvePending = async (
   db: Database,
@@ -317,55 +317,11 @@ export const handleAdminCommand = async (
 };
 
 /**
- * 删除消息并临时封禁发送者。
- *
- * 管理员和查不到名单时不动手：宁可漏过一条广告，也不要误封管理员。
- * 返回 false 表示没有执行。
- */
-const punishSender = async (
-  bot: Bot,
-  msg: Message,
-  config: BotConfig,
-  reason: string
-): Promise<boolean> => {
-  const sender = msg.from;
-
-  if (sender === undefined) {
-    return false;
-  }
-
-  const admins = await adminIds(bot, msg.chat.id);
-
-  if (admins === null || admins.has(sender.id)) {
-    return false;
-  }
-
-  try {
-    await bot.api.deleteMessage(msg.chat.id, msg.message_id);
-  } catch (error) {
-    logWarn("moderation.delete.failed", { chatId: msg.chat.id }, error);
-  }
-
-  try {
-    const untilDate = Math.floor(Date.now() / 1000) + config.banSeconds;
-    await banMember(bot, msg.chat.id, sender.id, untilDate);
-  } catch (error) {
-    logError("moderation.ban.failed", error, { chatId: msg.chat.id });
-  }
-
-  await bot.api.sendMessage(
-    msg.chat.id,
-    `因${reason}，${targetName(sender)} 已被封禁。`
-  );
-
-  return true;
-};
-
-/**
- * 关键词黑名单。命中后删除消息并临时封禁发送者。
+ * 关键词黑名单。命中后走三次警告处置：删除消息并警告，累计三次封禁。
  */
 export const moderateMessage = async (
   bot: Bot,
+  db: Database,
   msg: Message,
   config: BotConfig
 ): Promise<boolean> => {
@@ -395,25 +351,11 @@ export const moderateMessage = async (
     keyword: hit,
   });
 
-  return await punishSender(bot, msg, config, `消息包含敏感关键词「${hit}」`);
-};
-
-/**
- * 模型判定为骚扰广告后的处置：和关键词命中走同一套动作（删除 + 临时封禁）。
- */
-export const handleSpamMessage = async (
-  bot: Bot,
-  msg: Message,
-  config: BotConfig
-): Promise<boolean> => {
-  const punished = await punishSender(bot, msg, config, "疑似骚扰广告");
-
-  if (punished) {
-    logInfo("moderation.spam", {
-      chatId: msg.chat.id,
-      userId: msg.from?.id,
-    });
-  }
-
-  return punished;
+  return await handleViolation(
+    bot,
+    db,
+    msg,
+    config,
+    `消息包含违规关键词「${hit}」`
+  );
 };
