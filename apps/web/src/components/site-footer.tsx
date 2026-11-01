@@ -43,6 +43,15 @@ export const SiteFooter = () => (
           <li>
             <Link to="/pages/joinus">加入我们</Link>
           </li>
+          <li>
+            <a
+              href="https://github.com/HackHTU/hackhtu.pages.dev"
+              target="_blank"
+              rel="noreferrer"
+            >
+              GitHub 仓库
+            </a>
+          </li>
           <li>由 Cloudflare Pages 提供</li>
         </ul>
       </div>
