@@ -39,23 +39,22 @@ export type ReplicaScreen = "pass" | "request" | "approval";
 export const formatMinute = (value: string): string =>
   value === "" ? "" : value.replace("T", " ").slice(0, 16);
 
+const pad = (value: number): string => String(value).padStart(2, "0");
+
 /**
- * 页面水印时间：与源站一致，使用设备本地化格式。
- * 是否有 PM、是否 24 小时制由系统和浏览器决定，日期与时间之间强制换行。
+ * 页面水印时间：固定 `yyyy/mm/dd\nhh:mm:ss`（24 小时制），
+ * 不跟随设备语言，避免出现 AM/PM 或各种本地化写法。
  */
 export const formatWatermark = (date: Date): string => {
-  const text = date.toLocaleString();
+  const day = `${date.getFullYear()}/${pad(date.getMonth() + 1)}/${pad(
+    date.getDate()
+  )}`;
 
-  const groups =
-    /^(?<date>.+?)(?:,\s|\s)(?<time>\d{1,2}:\d{2}:\d{2}(?:\s?[AP]M)?)$/u.exec(
-      text
-    )?.groups;
+  const clock = `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(
+    date.getSeconds()
+  )}`;
 
-  if (groups?.date === undefined || groups.time === undefined) {
-    return text;
-  }
-
-  return `${groups.date},\n${groups.time}`;
+  return `${day}\n${clock}`;
 };
 
 /** 列表页 / 审批页的秒级时间，秒数取源站截图里的值。 */
