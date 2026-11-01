@@ -2,12 +2,18 @@
  * 群聊记录的行式序列化。
  *
  * 每条消息渲染成一行纯文本：
- * `[MM-DD HH:mm] 昵称(用户ID,#消息ID) 回复#被回复ID: 正文`，
+ * `[MM-DD HH:mm] [会话] 昵称[身份](用户ID,#消息ID) 回复 昵称(用户ID,#被回复ID): 正文`，
  * 多行正文的续行带两个空格缩进，方便模型区分「新消息」和「上一条的续行」。
  *
  * 这里刻意不用 XML：上下文里出现什么格式，模型就会照着模仿输出，
  * 而模型真正要产出的是 Markdown 正文 + 少量指令标记（见 bot 的 directives）。
  */
+
+/** 发送者在当前群的身份。 */
+export type AiChatRole = "creator" | "administrator" | "member";
+
+/** 会话类型，直接对应 Telegram chat.type。 */
+export type AiChatType = "private" | "group" | "supergroup" | "channel";
 
 export interface AiChatMessage {
   /** Telegram message_id */
@@ -16,12 +22,22 @@ export interface AiChatMessage {
   name: string;
   /** 发送者 user id，机器人自己为 bot id */
   uid: number;
+  /** 发送者是不是机器人；拿不到时不填 */
+  isBot?: boolean;
+  /** 发送者在当前群的身份；私聊或取不到时不填 */
+  role?: AiChatRole;
+  /** 会话类型 */
+  chatType?: AiChatType;
+  /** 群名；私聊或没有标题时留空 */
+  chatTitle?: string;
   /** 毫秒时间戳 */
   time: number;
   /** 是否为机器人自己发送的消息 */
   me: boolean;
   /** 被回复消息的 id */
   replyToId?: number;
+  /** 被回复消息的发送者 */
+  replyTo?: { name: string; uid: number; isBot?: boolean };
   /** 纯文本正文（图片等附件用占位描述） */
   text: string;
 }
@@ -41,18 +57,70 @@ export const formatLogTime = (time: number): string =>
 
 const indent = (text: string): string => text.replaceAll("\n", "\n  ");
 
-export const renderMessage = (message: AiChatMessage): string => {
-  const reply =
-    message.replyToId === undefined ? "" : ` 回复#${message.replyToId}`;
+const ROLE_LABELS: Record<AiChatRole, string> = {
+  creator: "群主",
+  administrator: "管理员",
+  member: "成员",
+};
 
-  const head = `[${formatLogTime(message.time)}] ${message.name}(${
-    message.uid
-  },#${message.id})${reply}:`;
+/** 会话前缀：`[群 群名]` / `[私聊]` / `[频道]`。 */
+const scopeOf = (message: AiChatMessage): string => {
+  if (message.chatType === "private") {
+    return "[私聊]";
+  }
+
+  if (message.chatType === "channel") {
+    return "[频道]";
+  }
+
+  const title = message.chatTitle?.trim() ?? "";
+
+  return title.length > 0 ? `[群 ${title}]` : "[群]";
+};
+
+/** 身份标记：`[bot]` / `[管理员]`，都没有时返回空串。 */
+const flagsOf = (
+  isBot: boolean | undefined,
+  role: AiChatRole | undefined
+): string => {
+  const flags: string[] = [];
+
+  if (isBot === true) {
+    flags.push("bot");
+  }
+
+  if (role !== undefined) {
+    flags.push(ROLE_LABELS[role]);
+  }
+
+  return flags.length === 0 ? "" : `[${flags.join(" ")}]`;
+};
+
+/** 回复段：`回复 昵称[bot](用户ID,#被回复ID)`。 */
+const replyOf = (message: AiChatMessage): string => {
+  if (message.replyToId === undefined) {
+    return "";
+  }
+
+  if (message.replyTo === undefined) {
+    return ` 回复#${message.replyToId}`;
+  }
+
+  const flags = flagsOf(message.replyTo.isBot, undefined);
+
+  return ` 回复 ${message.replyTo.name}${flags}(${message.replyTo.uid},#${message.replyToId})`;
+};
+
+export const renderMessage = (message: AiChatMessage): string => {
+  const head = `${scopeOf(message)} ${message.name}${flagsOf(
+    message.isBot,
+    message.role
+  )}(${message.uid},#${message.id})${replyOf(message)}:`;
 
   const body =
     message.text.trim().length === 0 ? "[空消息]" : indent(message.text);
 
-  return `${head} ${body}`;
+  return `[${formatLogTime(message.time)}] ${head} ${body}`;
 };
 
 /**
@@ -99,12 +167,13 @@ export const stripMessageWrapper = (text: string): string => {
 };
 
 /**
- * 聊天记录行头：`[10-31 20:02] 奶龙(7293166318,#1638) 回复#12: `。
+ * 聊天记录行头：`[10-31 20:02] [群 小窝] 奶龙[bot](7293166318,#1638) 回复 小七(123,#12): `。
  *
  * 模型会把自己当成聊天记录的一行，在回复开头原样抄一个行头；
  * 输出和旧历史都要按这个模式清理。
  */
-const RECORD_HEAD = /^\[[^\]]*\] [^\n]*?\(\d+,#\d+\)(?: 回复#\d+)?:[ \t]*/u;
+const RECORD_HEAD =
+  /^\[[^\]]*\] [^\n]*?\(\d+,#\d+\)(?: 回复 ?(?:#\d+|[^\n]*?\(\d+,#\d+\)))?:[ \t]*/u;
 
 /**
  * 去掉开头一条或多条聊天记录行头，只留正文。

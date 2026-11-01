@@ -11,7 +11,7 @@ import type { Bindings } from "../../env";
 import { handleSpamMessage } from "../../handlers/moderation";
 import { logDebug, logError, logInfo, logWarn } from "../../lib/log";
 import { transcribeVoice } from "./media/attachments";
-import { hasContent, hasMedia, toChatMessage } from "./message";
+import { hasContent, hasMedia, senderRole, toChatMessage } from "./message";
 import { replyNow } from "./reply";
 import { isMessageDone, markMessageDone } from "./state";
 
@@ -179,7 +179,9 @@ export const handleAiMessage = async (
     return;
   }
 
-  const chatMessage = toChatMessage(msg, sender, transcript);
+  // 身份要从 Telegram 查一次；取不到不影响后续流程。
+  const role = await senderRole(bot, msg);
+  const chatMessage = toChatMessage(msg, sender, transcript, role);
 
   const rendered = renderMessage(chatMessage);
   const isPrivate = msg.chat.type === "private";

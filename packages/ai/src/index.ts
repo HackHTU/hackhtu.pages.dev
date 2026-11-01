@@ -49,7 +49,7 @@ export {
   stripRecordHead,
 } from "./context/chat-log";
 
-export type { AiChatMessage } from "./context/chat-log";
+export type { AiChatMessage, AiChatRole, AiChatType } from "./context/chat-log";
 
 export { parseCapabilities } from "./media/capabilities";
 

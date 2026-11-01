@@ -9,12 +9,13 @@ const COMPRESS_PROMPT = [
 ].join("");
 
 /**
- * 聊天记录的头一行前缀：`[10-31 12:34] 小七(123,#42) 回复#12`。
+ * 聊天记录的头一行前缀：`[10-31 12:34] [群 小窝] 小七[成员](123,#42) 回复 神(456,#12)`。
  *
  * 昵称里允许出现 `:`，所以不能用 `[^:]*` 去匹配昵称；
  * 这里锚定 `(uid,#id)` 这一段，再吃到它后面的冒号。
  */
-const RECORD_HEAD = /^(?<head>\[[^\]]*\] .*?\(\d+,#\d+\)(?: 回复#\d+)?):/u;
+const RECORD_HEAD =
+  /^(?<head>\[[^\]]*\] .*?\(\d+,#\d+\)(?: 回复 ?(?:#\d+|[^\n]*?\(\d+,#\d+\)))?):/u;
 
 const fallbackTruncate = (content: string, tokenLimit: number): string => {
   const maxChars = Math.max(1000, Math.floor(tokenLimit * 1.5));
