@@ -1,0 +1,1741 @@
+/**
+ * 河南师大智慧学工（htu.g8n.cn）手机端页面复刻样式。
+ * 所有数值取自教学管理页面在 390×844 视口下的实测计算样式，
+ * 作用域限定在 .htu-mobile 内，避免影响站内其他页面。
+ */
+
+@font-face {
+  font-family: "Line Awesome Free";
+  font-style: normal;
+  font-weight: 900;
+  font-display: auto;
+  src: url("/tools/leave-slip/la-solid-900.woff2") format("woff2");
+}
+
+.htu-mobile {
+  --htu-primary: #007bff;
+  position: relative;
+  width: 390px;
+  max-width: 100vw;
+  color: #33445c;
+  background: #f6f6f6;
+  font-family:
+    -apple-system, "system-ui", "Segoe UI", Roboto, "Helvetica Neue", Arial,
+    "Noto Sans", "Liberation Sans", sans-serif, "Apple Color Emoji",
+    "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  font-size: 14px;
+  font-weight: 400;
+  font-style: normal;
+  font-variant: normal;
+  line-height: 1.5;
+  letter-spacing: normal;
+  text-align: left;
+  text-transform: none;
+  text-indent: 0;
+  word-spacing: normal;
+  font-feature-settings: normal;
+  font-kerning: auto;
+  font-synthesis: weight style;
+  -webkit-font-smoothing: auto;
+  -moz-osx-font-smoothing: auto;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 先把站内 shadcn / Tailwind 的继承样式全部归零，再由下方规则逐项还原。 */
+.htu-mobile * {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  line-height: inherit;
+  list-style: none;
+  text-align: inherit;
+  text-decoration: none;
+  vertical-align: baseline;
+}
+
+.htu-mobile *,
+.htu-mobile *::before,
+.htu-mobile *::after {
+  box-sizing: border-box;
+}
+
+.htu-mobile a {
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.htu-mobile button {
+  font: inherit;
+  cursor: pointer;
+}
+
+.htu-mobile img {
+  display: inline-block;
+  max-width: 100%;
+  vertical-align: middle;
+}
+
+.htu-mobile .la {
+  display: inline-block;
+  font-family: "Line Awesome Free";
+  font-style: normal;
+  font-weight: 900;
+  font-variant: normal;
+  line-height: 1;
+  text-transform: none;
+  -webkit-font-smoothing: antialiased;
+  speak: none;
+}
+
+.htu-mobile .la-arrow-left::before {
+  content: "\f060";
+}
+.htu-mobile .la-qrcode::before {
+  content: "\f029";
+}
+.htu-mobile .la-angle-right::before {
+  content: "\f105";
+}
+.htu-mobile .la-angle-down::before {
+  content: "\f107";
+}
+.htu-mobile .la-refresh::before {
+  content: "\f021";
+}
+.htu-mobile .la-question-circle::before {
+  content: "\f059";
+}
+.htu-mobile .la-list::before {
+  content: "\f03a";
+}
+.htu-mobile .la-file-alt::before {
+  content: "\f15c";
+}
+
+/* ------------------------------ 页面骨架 ------------------------------ */
+
+.htu-page {
+  position: relative;
+  z-index: 0;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 844px;
+  overflow: visible;
+  background-color: #f2f6fb;
+  background-image:
+    linear-gradient(rgba(45, 140, 240, 0.085) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(45, 140, 240, 0.085) 1px, transparent 1px),
+    radial-gradient(
+      900px 420px at 100% 0,
+      rgba(45, 140, 240, 0.22),
+      rgba(45, 140, 240, 0) 70%
+    ),
+    radial-gradient(
+      760px 340px at 0 180px,
+      rgba(18, 184, 200, 0.18),
+      rgba(18, 184, 200, 0) 70%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(198, 224, 252, 0.7) 0,
+      rgba(224, 238, 252, 0.34) 420px,
+      rgba(242, 246, 251, 0) 100%
+    );
+  background-repeat: repeat, repeat, no-repeat, no-repeat, no-repeat;
+  background-size:
+    24px 24px,
+    24px 24px,
+    auto,
+    auto,
+    auto;
+  background-attachment: local;
+}
+
+.htu-header {
+  position: sticky;
+  top: 0;
+  z-index: 9;
+  display: flex;
+  flex: 0 0 50px;
+  align-items: stretch;
+  width: 100%;
+  height: 50px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #00b4c9 5%, #3b6cfe 100%);
+  box-shadow: 0 1px 4px rgba(10, 60, 120, 0.18);
+}
+
+.htu-header-left {
+  flex: 0 0 50px;
+  width: 50px;
+}
+
+.htu-header-left > a {
+  display: block;
+  width: 40px;
+  height: 40px;
+  margin: 5px;
+  border-radius: 10px;
+  color: #fff;
+  line-height: 34px;
+  text-align: center;
+}
+
+.htu-header-left > a:active {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.htu-header-left > a > .la {
+  margin-top: -2px;
+  font-size: 21px;
+  line-height: 44px;
+  vertical-align: middle;
+}
+
+.htu-header-center {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  min-width: 0;
+  padding: 0 15px;
+}
+
+.htu-logo {
+  display: inline-block;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 50px;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.htu-header-center > .htu-logo,
+.htu-header-center > .htu-logo:hover {
+  color: #fff;
+}
+
+.htu-header-right {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 2px 6px 0 0;
+}
+
+.htu-header-right > a {
+  display: block;
+  width: auto;
+  height: 40px;
+  margin: 5px;
+  border-radius: 10px;
+  color: #fff;
+  font-size: 14px;
+  line-height: 34px;
+  white-space: nowrap;
+}
+
+.htu-header-right > a:active {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.htu-header-right > a > .la {
+  margin-top: -1px;
+  margin-right: 0;
+  font-size: 22px;
+  line-height: 22px;
+  vertical-align: middle;
+}
+
+.htu-header-right-wide {
+  width: 120px;
+  padding-top: 0;
+  padding-right: 0;
+}
+
+.htu-header-right-wide > a {
+  width: 110px;
+  margin: 5px;
+  text-align: center;
+}
+
+.htu-content {
+  display: block;
+  flex: 1 0 auto;
+  width: 100%;
+  padding: 0;
+}
+
+/* ------------------------------ 通用卡片 ------------------------------ */
+
+.htu-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: visible;
+  border: 0;
+  border-radius: 6px;
+  background-color: rgba(255, 255, 255, 0.8);
+  box-shadow:
+    0 3px 10px rgba(23, 58, 105, 0.09),
+    0 0 0 1px rgba(163, 199, 242, 0.5),
+    inset 0 1px 0 #fff;
+  color: #33445c;
+}
+
+.htu-card-header {
+  padding: 10px 15px;
+  border-bottom: 1px solid #e3ebf5;
+  border-radius: 6px 6px 0 0;
+  color: #12294a;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 21px;
+}
+
+.htu-card-body {
+  padding: 17.5px;
+}
+
+.htu-mt-15 {
+  margin-top: 15px;
+}
+
+/* ------------------------------ 出示假条 ------------------------------ */
+
+.htu-pass-content {
+  padding: 5px;
+}
+
+.htu-pass-card {
+  position: relative;
+}
+
+.htu-pass-title {
+  margin: 0 0 7px;
+  color: #343a40;
+  font-size: 28px;
+  font-weight: 300;
+  line-height: 33.6px;
+  text-align: center;
+}
+
+.htu-pass-dept {
+  margin: 10px 0 0;
+  color: #ff5e62;
+  font-size: 12px;
+  line-height: 18px;
+  text-align: center;
+}
+
+.htu-stamp {
+  position: absolute;
+  top: -15px;
+  right: -15px;
+  z-index: 100;
+  width: 110px;
+  height: auto;
+  animation: htu-stamp 0.3s ease-in;
+}
+
+@keyframes htu-stamp {
+  from {
+    top: -15px;
+    right: -90px;
+    width: 200px;
+    opacity: 0.5;
+  }
+  to {
+    top: -15px;
+    right: -15px;
+    width: 110px;
+    opacity: 1;
+  }
+}
+
+.htu-pass-row {
+  display: flex;
+  flex-wrap: nowrap;
+  margin: 30px -15px 20px;
+}
+
+.htu-pass-col {
+  display: flex;
+  flex: 1 0 0;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  padding: 0 15px;
+}
+
+.htu-pass-col-photo {
+  align-items: center;
+}
+
+.htu-pass-col-info {
+  align-items: stretch;
+  min-width: 0;
+  padding-right: 15px;
+  padding-left: 0;
+}
+
+.htu-pass-figure {
+  margin: 0;
+}
+
+.htu-pass-avatar {
+  display: block;
+  width: 165px;
+  max-width: 100%;
+  height: 110px;
+  margin: 0;
+  border-radius: 3.5px;
+  object-fit: cover;
+}
+
+.htu-pass-name {
+  margin: 5px 0 15px;
+  color: #343a40;
+  font-size: 17.5px;
+  font-weight: 500;
+  line-height: 21px;
+}
+
+.htu-pass-name > span {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 16.8px;
+}
+
+.htu-pass-meta {
+  margin: 0 0 10px;
+  color: #7b8a9c;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 16.8px;
+  overflow-wrap: anywhere;
+}
+
+.htu-pass-label {
+  margin: 0 0 7px;
+  color: #7b8a9c;
+  font-size: 14px;
+  line-height: 16.8px;
+}
+
+.htu-time-table {
+  width: 100%;
+  margin: 0 0 14px;
+  border-collapse: collapse;
+  border-bottom: 1px solid #dee2e6;
+  color: #212529;
+  table-layout: auto;
+  text-align: center;
+}
+
+.htu-time-table th,
+.htu-time-table td {
+  padding: 10.5px;
+  border-top: 1px solid #dee2e6;
+  vertical-align: middle;
+  text-align: center;
+}
+
+.htu-time-table th {
+  color: #666;
+  font-weight: 400;
+  text-align: right;
+}
+
+.htu-time-table td {
+  width: 220px;
+}
+
+.htu-time-value {
+  margin: 0;
+  color: #343a40;
+  font-size: 24.5px;
+  font-weight: 300;
+  line-height: 29.4px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.htu-invisible {
+  visibility: hidden;
+}
+
+.htu-pass-type {
+  margin: 20px 0 -10px;
+  color: #ff5e62;
+  font-size: 24px;
+  font-weight: 400;
+  line-height: 36px;
+  text-align: center;
+}
+
+.htu-pass-approval {
+  text-align: center;
+}
+
+.htu-bottom-table {
+  width: auto;
+  margin: 30px auto 0;
+  border-collapse: collapse;
+  color: #212529;
+  font-size: 16px;
+  line-height: 24px;
+  text-align: left;
+}
+
+.htu-bottom-table th,
+.htu-bottom-table td {
+  padding: 4.2px;
+  white-space: nowrap;
+  border: 0;
+  vertical-align: middle;
+}
+
+.htu-bottom-table th {
+  color: #666;
+  font-weight: 400;
+  text-align: right;
+}
+
+.htu-bottom-table td {
+  color: #343a40;
+}
+
+.htu-watermark {
+  position: absolute;
+  top: 57%;
+  left: 50%;
+  z-index: 0;
+  width: auto;
+  color: rgba(0, 0, 0, 0.08);
+  font-size: 70px;
+  font-weight: 700;
+  line-height: 84px;
+  text-align: center;
+  white-space: pre-line;
+  transform: translate(-50%, -50%);
+  animation: htu-watermark-flow 6s linear infinite alternate;
+  pointer-events: none;
+}
+
+.htu-card-text {
+  position: relative;
+}
+
+.htu-card-text > *:not(.htu-watermark):not(.htu-stamp) {
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes htu-watermark-flow {
+  from {
+    top: 57%;
+  }
+  to {
+    top: 75%;
+  }
+}
+
+.htu-pass-back {
+  margin: 20px 0 30px;
+  text-align: center;
+}
+
+.htu-pass-back > a {
+  display: inline;
+  padding: 10px;
+  color: #0a5fc4;
+  font-size: 14px;
+  line-height: 21px;
+  text-decoration: underline;
+}
+
+.htu-pass-back .la {
+  font-size: 14px;
+  line-height: 14px;
+}
+
+/* 核验码 */
+
+.htu-qr-area {
+  margin: 20px 0;
+  text-align: center;
+}
+
+.htu-qr-box {
+  margin-top: 10px;
+}
+
+.htu-qr-image {
+  display: block;
+  width: 158px;
+  height: 158px;
+  margin: 0 auto;
+}
+
+.htu-qr-placeholder {
+  width: 158px;
+  height: 158px;
+  margin: 0 auto;
+  background: #fff;
+}
+
+.htu-qr-caption {
+  color: #ff0000;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+/* ------------------------------ 销假折叠区 ------------------------------ */
+
+.htu-accordion-card {
+  border-radius: 6px;
+  box-shadow: none;
+}
+
+.htu-accordion-header {
+  padding: 10px 15px;
+  border-bottom: 1px solid #e3ebf5;
+  border-radius: 6px 6px 0 0;
+}
+
+.htu-accordion-toggle {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 37px;
+  padding: 5.25px 0;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  background: transparent;
+  color: #0a5fc4;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 21px;
+  text-align: left;
+}
+
+.htu-accordion-seg {
+  display: flex;
+  flex: 1 1 0;
+  align-items: center;
+  min-width: 0;
+}
+
+.htu-accordion-seg-end {
+  justify-content: flex-end;
+}
+
+.htu-accordion-icon {
+  margin-top: -3px;
+  font-size: 14px;
+  line-height: 14px;
+}
+
+.htu-accordion-title {
+  color: #0a5fc4;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 24px;
+  white-space: nowrap;
+}
+
+.htu-accordion-body {
+  display: block;
+  min-height: 357px;
+  margin-top: -2px;
+  padding: 17.5px;
+}
+
+.htu-accordion-group {
+  margin: 0 0 20px;
+}
+
+.htu-accordion-group:first-child {
+  height: 34px;
+}
+
+.htu-accordion-label {
+  display: inline-block;
+  margin: 0 0 7px;
+  color: #333;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 21px;
+}
+
+.htu-accordion-location {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 27px;
+  margin-bottom: 7px;
+}
+
+.htu-accordion-required {
+  color: #ff5e62;
+}
+
+.htu-accordion-gps {
+  display: block;
+  flex: 0 0 160px;
+  width: 160px;
+  height: 27px;
+  padding: 3.5px 20px;
+  border: 1px solid #15a675;
+  border-radius: 3px;
+  background-color: #15a675;
+  color: #fff;
+  font-size: 12.25px;
+  font-weight: 400;
+  line-height: 18.375px;
+  text-align: center;
+}
+
+.htu-accordion-hint {
+  color: #6c757d;
+  font-size: 11.2px;
+  font-weight: 300;
+  line-height: 16.8px;
+}
+
+.htu-filer {
+  height: 90px;
+  padding: 25px;
+  border: 2px dashed #c8cbce;
+  background-color: #fff;
+  color: #97a1a8;
+  text-align: center;
+}
+
+.htu-filer-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
+}
+
+.htu-filer-button {
+  display: inline-block;
+  width: 150px;
+  height: 36px;
+  padding: 8px 14px;
+  border: 1px solid #c6c6c6;
+  border-radius: 3px;
+  background-color: #fff;
+  color: #8d9496;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.htu-accordion-input {
+  display: block;
+  width: 100%;
+  height: 34px;
+  margin: 0 0 10px;
+  padding: 4px 11px;
+  border: 1px solid #d9e2ee;
+  border-radius: 2px;
+  background-color: #fff;
+  color: rgba(0, 0, 0, 0.65);
+  font-size: 14px;
+  line-height: 21px;
+  outline: 0;
+}
+
+.htu-xiaojia-button {
+  display: block;
+  width: 184px;
+  margin: -1px auto 0;
+  padding: 12px 24px;
+  border-radius: 8px;
+  background-color: #15a675;
+  color: #fff;
+  font-size: 17px;
+  font-weight: 500;
+  line-height: 24px;
+  text-align: center;
+}
+
+/* ------------------------------ 请假条详情 ------------------------------ */
+
+.htu-detail-content {
+  padding: 0;
+}
+
+.htu-detail-inner {
+  padding: 5px;
+}
+
+.htu-btn {
+  display: inline-block;
+  padding: 7px 20px;
+  border: 0;
+  border-radius: 3px;
+  font-size: 16px;
+  line-height: 30px;
+  text-align: center;
+  vertical-align: middle;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+.htu-btn-block {
+  display: block;
+  width: 100%;
+}
+
+.htu-btn-lg {
+  padding: 7px 20px;
+  border-radius: 10px;
+  font-size: 16px;
+  line-height: 30px;
+}
+
+.htu-btn-link {
+  color: #0a5fc4;
+  font-weight: 400;
+  text-decoration: none;
+}
+
+.htu-bg-white {
+  background-color: #fff;
+}
+
+.htu-btn-link:active {
+  color: #0d51b8;
+  background-color: #f8f9fa;
+}
+
+.htu-mobile .htu-link-btn {
+  display: block;
+  width: 100%;
+  padding: 7px 20px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background-color: #fff;
+  color: #0a5fc4;
+  font-size: 16px;
+  line-height: 30px;
+  text-align: center;
+}
+
+.htu-link-btn + .htu-link-btn {
+  margin-top: 20px;
+}
+
+.htu-link-btn .la {
+  margin-top: -3px;
+  font-size: 16px;
+  line-height: 16px;
+  vertical-align: middle;
+}
+
+.htu-mv-15 {
+  margin: 15px 0;
+}
+
+.htu-cells-title {
+  margin: 16px 0 6px;
+  padding: 0 16px;
+  color: rgba(0, 0, 0, 0.5);
+  font-size: 14px;
+  line-height: 19.6px;
+}
+
+.htu-cells {
+  overflow: hidden;
+  border-radius: 10px;
+  background-color: #fff;
+  color: #000;
+}
+
+.htu-cell {
+  display: flex;
+  align-items: center;
+  padding: 10px 16px;
+  color: #555;
+  font-size: 15px;
+  line-height: 21.1765px;
+}
+
+.htu-cell + .htu-cell {
+  border-top: 0;
+}
+
+.htu-cell-hd {
+  display: flex;
+  flex: 0 0 105px;
+  align-items: center;
+  width: 105px;
+  min-height: 21px;
+}
+
+.htu-label {
+  display: inline-block;
+  width: 105px;
+  margin: 0;
+  color: #555;
+  font-size: 15px;
+  line-height: 21.1765px;
+}
+
+.htu-cell-bd {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: #555;
+  font-size: 15px;
+  line-height: 21.1765px;
+}
+
+.htu-cell-bd .htu-small {
+  color: #6c757d;
+  font-size: 12px;
+  line-height: 16.9412px;
+}
+
+.htu-cell-bd .htu-cell-sub {
+  margin-top: 5px;
+  color: #6c757d;
+  font-size: 12px;
+  line-height: 16.9412px;
+}
+
+.htu-green {
+  color: #008000;
+}
+
+/* 表单 */
+
+.htu-form {
+  border-radius: 10px;
+  background-color: #fff;
+  padding: 20px;
+  color: #33445c;
+  font-size: 14px;
+  line-height: 21px;
+}
+
+.htu-form-group {
+  margin: 0 0 14px;
+}
+
+.htu-control-label {
+  display: block;
+  margin: 0 0 7px;
+  color: #333;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 21px;
+}
+
+.htu-control-label .htu-required {
+  display: none;
+}
+
+.htu-required {
+  color: #ff0000;
+}
+
+.htu-radio-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0;
+}
+
+.htu-radio-inline {
+  display: inline-flex;
+  align-items: center;
+  min-width: 100px;
+  margin: 0 10px 7px 0;
+  color: #33445c;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 21px;
+  white-space: nowrap;
+}
+
+.htu-radio-inline.is-active {
+  color: var(--htu-primary);
+}
+
+.htu-radio-inline.is-unavailable {
+  color: #7b8a9c;
+  cursor: default;
+}
+
+.htu-radio-inline input[type="radio"],
+.htu-radio-inline input[type="checkbox"] {
+  width: 13px;
+  height: 13px;
+  margin: 0 3px 0 0;
+  accent-color: var(--htu-primary);
+  pointer-events: none;
+}
+
+.htu-radio-inline input[type="radio"] {
+  appearance: radio;
+  -webkit-appearance: radio;
+}
+
+.htu-radio-inline input[type="checkbox"] {
+  appearance: checkbox;
+  -webkit-appearance: checkbox;
+}
+
+/* 导出时各浏览器对原生 checkbox 的栅格化不一致，用样式完全一致的自绘方块。 */
+.htu-check-box {
+  position: relative;
+  display: inline-block;
+  flex: 0 0 13px;
+  width: 13px;
+  height: 13px;
+  margin-right: 3px;
+  border-radius: 3px;
+  background: #d1d1d1;
+  vertical-align: middle;
+}
+
+.htu-check-box::after {
+  position: absolute;
+  top: 2px;
+  left: 4px;
+  width: 4px;
+  height: 7px;
+  border: solid #fff;
+  border-width: 0 1.5px 1.5px 0;
+  content: "";
+  transform: rotate(45deg);
+}
+
+.htu-radio-inline.is-active input[type="radio"],
+.htu-radio-inline.is-active input[type="checkbox"] {
+  opacity: 1;
+}
+
+.htu-mt-20 {
+  margin-top: 20px;
+}
+
+.htu-mt-24 {
+  margin-top: 24px;
+}
+
+.htu-placeholder {
+  margin: 0 0 14px;
+  color: #aaa;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.htu-form-control {
+  display: block;
+  width: 100%;
+  height: 34px;
+  padding: 4px 11px;
+  border: 0;
+  border-radius: 2px;
+  background-color: #e9ecef;
+  color: rgba(0, 0, 0, 0.65);
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 21px;
+  outline: 0;
+}
+
+.htu-form-control::placeholder {
+  color: rgba(125, 125, 125, 0.5);
+  opacity: 1;
+}
+
+.htu-form-control:disabled {
+  opacity: 1;
+  -webkit-text-fill-color: rgba(0, 0, 0, 0.65);
+}
+
+select.htu-form-control {
+  padding-top: 0;
+  padding-bottom: 0;
+  line-height: 24.5px;
+  appearance: auto;
+}
+
+.htu-form-control-datetime {
+  border: 1px solid #e5e6e7 !important;
+  background-color: #fff !important;
+  line-height: 21px;
+}
+
+textarea.htu-form-control {
+  height: 66px;
+  padding: 4px 11px;
+  overflow-y: hidden;
+  resize: none;
+}
+
+.htu-form-text {
+  margin: -10px 0 15px;
+  color: #999;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.htu-form p.htu-form-note {
+  margin: 0 0 14px;
+  color: #aaa;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.htu-form ol {
+  margin: 0 0 14px;
+  padding: 0;
+  color: #33445c;
+  font-size: 14px;
+  line-height: 21px;
+  list-style-position: inside;
+  list-style-type: decimal;
+}
+
+.htu-form ol li {
+  font-size: 14px;
+  line-height: 21px;
+  list-style-position: inside;
+  list-style-type: decimal;
+}
+
+.htu-form .htu-check-label {
+  margin: 0;
+}
+
+.htu-mb-15 {
+  margin-bottom: 15px;
+}
+
+/* ------------------------------ 审批流程 ------------------------------ */
+
+.htu-process-content {
+  padding: 0 5px 50px;
+}
+
+.htu-process-card {
+  margin: 7px 0 14px;
+}
+
+.htu-process-card .htu-card-header {
+  position: relative;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 21px;
+}
+
+.htu-process-status {
+  float: right;
+  color: #56ab2f;
+  font-weight: 600;
+}
+
+.htu-process-intro {
+  margin: 0 0 8px;
+  color: #000;
+  font-size: 14px;
+  line-height: 21px;
+}
+
+.htu-process-intro b {
+  font-weight: 700;
+}
+
+.htu-process-intro a {
+  color: #0a5fc4;
+  font-weight: 700;
+}
+
+.htu-process-intro .htu-person-meta {
+  color: #aaa;
+  font-size: 12px;
+  line-height: 16.8px;
+}
+
+.htu-mt-10 {
+  margin: 0 0 8px;
+}
+
+.htu-list-group {
+  margin: 0 0 14px;
+  padding: 0;
+  border-radius: 3.5px;
+  list-style: none;
+  overflow: hidden;
+}
+
+.htu-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 14px 6px 12px;
+  border-top: 1px solid #f6f8fb;
+  background: #fff;
+  color: #33445c;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+}
+
+.htu-list-item.htu-list-header {
+  border-top: 0;
+  border-radius: 10px 10px 0 0;
+  background-color: #f6f6f6;
+  font-weight: 700;
+}
+
+.htu-list-item.htu-list-last {
+  border-radius: 0 0 10px 10px;
+}
+
+.htu-list-item .htu-list-label {
+  flex: 1 0 70px;
+  min-width: 0;
+  margin-right: 2px;
+  color: #33445c;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.htu-list-item .htu-list-icon {
+  margin-left: 2px;
+  color: #aaa;
+  font-size: 16px;
+  line-height: 16px;
+  vertical-align: middle;
+}
+
+.htu-badge {
+  flex: 0 0 auto;
+  padding: 0 5px;
+  border-radius: 3.5px;
+  color: #33445c;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 20px;
+  white-space: nowrap;
+}
+
+.htu-badge-danger {
+  background-color: #dc3545;
+  color: #fff;
+  font-size: 12px;
+  line-height: 21.6px;
+}
+
+.htu-form-text-small {
+  margin-top: 2px;
+  color: #999;
+  font-size: 11.2px;
+  line-height: 20px;
+}
+
+.htu-process-plan {
+  margin: 0 0 8px;
+  color: #33445c;
+  font-size: 14px;
+  line-height: 21px;
+}
+
+.htu-process-plan b {
+  font-weight: 700;
+}
+
+.htu-breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  margin: 0 0 14px;
+  padding: 10.5px 14px;
+  overflow-x: auto;
+  border-radius: 3.5px;
+  background-color: #e9ecef;
+  list-style: none;
+  font-size: 14px;
+  line-height: 21px;
+}
+
+.htu-breadcrumb-item {
+  display: flex;
+  align-items: center;
+  color: #33445c;
+  font-size: 14px;
+  line-height: 21px;
+}
+
+.htu-breadcrumb-item + .htu-breadcrumb-item::before {
+  display: inline-block;
+  padding-right: 7px;
+  padding-left: 7px;
+  color: #6c757d;
+  content: ">";
+}
+
+.htu-process-status-tag {
+  display: inline-block;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background-color: #5fb878;
+  color: #fff;
+  font-size: 12px;
+  line-height: 18px;
+  white-space: nowrap;
+}
+
+.htu-history-body {
+  padding: 3.5px;
+}
+
+.htu-history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.htu-history-item {
+  padding: 10.5px 17.5px;
+  background: #fff;
+  color: #495057;
+  font-size: 14px;
+  line-height: 21px;
+}
+
+.htu-history-item:first-child {
+  border-radius: 10px 10px 0 0;
+}
+
+.htu-history-item:last-child {
+  border-radius: 0 0 10px 10px;
+}
+
+.htu-history-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.htu-history-name {
+  margin-bottom: 3.5px;
+  color: #495057;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 21px;
+}
+
+.htu-history-role {
+  margin-bottom: 3.5px;
+  color: #6c757d;
+  font-size: 11.2px;
+  line-height: 16.8px;
+}
+
+.htu-history-date {
+  margin: 0 0 3.5px;
+  color: #7b8a9c;
+  font-size: 14px;
+  line-height: 21px;
+}
+
+.htu-history-role .htu-status-text {
+  color: #6c757d;
+  font-size: 11.2px;
+}
+
+.htu-process-footer {
+  display: flex;
+  margin: 21px 0 0;
+  padding: 0 21px;
+}
+
+.htu-process-footer a {
+  margin-right: 21px;
+  color: #6c757d;
+  font-size: 14px;
+  line-height: 21px;
+}
+
+.htu-process-footer a:last-child {
+  margin-right: 0;
+}
+
+.htu-process-footer .la {
+  font-size: 14px;
+  line-height: 14px;
+  vertical-align: middle;
+}
+
+.htu-process-spacer {
+  height: 400px;
+}
+
+/* ------------------------------ 交互弹层 ------------------------------ */
+
+/* 全屏时隐藏站内页面，让复刻页本身成为文档流，滚动条属于页面。 */
+body.htu-fullscreen-open {
+  height: auto !important;
+  overflow-y: scroll !important;
+  background: #f2f6fb;
+  overflow-anchor: none;
+}
+
+html:has(body.htu-fullscreen-open) {
+  overflow-anchor: none;
+}
+
+body.htu-fullscreen-open > #root {
+  display: none !important;
+}
+
+.htu-fullscreen {
+  width: 100%;
+  min-height: 100dvh;
+  background: #f2f6fb;
+}
+
+.htu-mobile.htu-mobile-full {
+  width: 100%;
+  max-width: none;
+}
+
+.htu-page {
+  cursor: default;
+}
+
+.htu-dialog-mask {
+  position: absolute;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.htu-dialog-backdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: transparent;
+}
+
+.htu-dialog {
+  position: relative;
+  z-index: 1;
+  width: 300px;
+  max-width: calc(100% - 40px);
+  overflow: hidden;
+  border-radius: 12px;
+  background: #fff;
+  text-align: center;
+}
+
+.htu-dialog-body {
+  padding: 24px 20px 20px;
+  color: #000;
+  font-size: 16px;
+  line-height: 24px;
+}
+
+.htu-dialog-actions {
+  display: flex;
+  border-top: 1px solid #eee;
+}
+
+.htu-dialog-actions button {
+  flex: 1 1 0;
+  padding: 14px 0;
+  border: 0;
+  background: transparent;
+  color: #576b95;
+  font-size: 16px;
+  line-height: 22px;
+}
+
+.htu-dialog-actions button + button {
+  border-left: 1px solid #eee;
+}
+
+.htu-dialog-actions button:last-child {
+  color: #07c160;
+  font-weight: 600;
+}
+
+.htu-toast {
+  position: absolute;
+  bottom: 80px;
+  left: 50%;
+  z-index: 201;
+  padding: 10px 16px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.7);
+  color: #fff;
+  font-size: 14px;
+  line-height: 20px;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.htu-fade-in {
+  animation: htu-fade 0.2s ease-out;
+}
+
+@keyframes htu-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ------------------------------ 直接编辑 ------------------------------ */
+
+.htu-inline-edit {
+  display: inline;
+  border-radius: 2px;
+  outline: none;
+  cursor: text;
+}
+
+.htu-inline-edit:focus {
+  background: rgba(45, 140, 240, 0.12);
+  box-shadow: 0 0 0 1px rgba(45, 140, 240, 0.35);
+}
+
+.htu-inline-edit:empty::before {
+  color: rgba(123, 138, 156, 0.55);
+  content: attr(data-placeholder);
+}
+
+.htu-avatar-button {
+  position: relative;
+  display: block;
+  width: 165px;
+  height: 110px;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 3.5px;
+  background: none;
+  cursor: pointer;
+}
+
+.htu-avatar-button .htu-pass-avatar {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+}
+
+.htu-avatar-tip {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  padding: 2px 0;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  font-size: 11px;
+  line-height: 16px;
+  text-align: center;
+}
+
+/* ------------------------------ 截图外壳 ------------------------------ */
+
+.htu-frame {
+  width: 100%;
+  background: #f2f3f5;
+}
+
+.htu-statusbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #111;
+  background: #f2f3f5;
+}
+
+.htu-statusbar-ios {
+  height: 44px;
+  padding: 0 22px;
+}
+
+.htu-statusbar-android {
+  height: 28px;
+  padding: 0 16px;
+}
+
+.htu-statusbar-time {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+.htu-statusbar-android .htu-statusbar-time {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.htu-statusbar-icons {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.htu-statusbar-android .htu-statusbar-icons {
+  gap: 4px;
+  transform: scale(0.82);
+  transform-origin: right center;
+}
+
+.htu-browserbar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 52px;
+  padding: 0 12px;
+  background: #f2f3f5;
+}
+
+.htu-browserbar-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  color: #5f6368;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.htu-browserbar-title {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 0;
+  line-height: 1.2;
+}
+
+.htu-browserbar-title > b {
+  max-width: 100%;
+  overflow: hidden;
+  color: #202124;
+  font-size: 13px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.htu-browserbar-title > i {
+  color: #80868b;
+  font-size: 10px;
+  font-style: normal;
+}
+
+.htu-browserbar-menu {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  width: 28px;
+  height: 28px;
+}
+
+.htu-browserbar-menu > i {
+  width: 3.5px;
+  height: 3.5px;
+  border-radius: 50%;
+  background: #5f6368;
+}
+
+.htu-frame-screen {
+  width: 100%;
+}
+
+.htu-bottombar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  background: #fff;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.htu-bottombar-dots {
+  gap: 20px;
+  height: 48px;
+}
+
+.htu-bottombar-dots > i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #5f6368;
+}
+
+.htu-bottombar-keys {
+  height: 48px;
+  gap: 84px;
+  padding: 0 28px;
+}
+
+.htu-bottombar-gesture {
+  height: 34px;
+}
+
+.htu-bottombar-gesture > i {
+  width: 134px;
+  height: 5px;
+  border-radius: 3px;
+  background: #111;
+}
+
+.htu-bottombar-browser {
+  height: 48px;
+  gap: 108px;
+  color: #202124;
+  font-size: 26px;
+  line-height: 1;
+}
+
+.htu-bottombar-back,
+.htu-bottombar-forward {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+}
+
+.htu-bottombar-forward {
+  color: rgba(32, 33, 36, 0.28);
+}

@@ -1,0 +1,458 @@
+import type { Database } from "@hackhtu/db";
+import { InlineKeyboard } from "grammy";
+import type { Bot } from "grammy";
+import type { CallbackQuery, Message, User } from "grammy/types";
+
+import type { BotConfig } from "../config";
+import { optionsForToken, pickQuestion, QUESTIONS } from "../config/questions";
+import type { VerificationQuestion } from "../config/questions";
+import { logInfo, logWarn } from "../lib/log";
+import { kickMember, muteMember, unmuteMember } from "../lib/telegram";
+import { handleVerificationAdminCallback } from "./verification-admin";
+import { displayName, mention } from "./verification-shared";
+import {
+  createToken,
+  createVerification,
+  getPendingVerificationByUser,
+  getVerification,
+  setVerificationStatus,
+} from "./verification-store";
+import type { VerificationRow } from "./verification-store";
+
+export { expireStaleVerifications } from "./verification-store";
+
+const usernameOf = (bot: Bot, config: BotConfig): string =>
+  bot.botInfo.username ?? config.botUsername.replace(/^@/u, "");
+
+/** 每个选项独占一行，按 token 旋转后的顺序排列。 */
+const buildKeyboard = (token: string, options: string[]): InlineKeyboard => {
+  const keyboard = new InlineKeyboard();
+
+  for (const [index, option] of options.entries()) {
+    keyboard.text(`${index + 1}. ${option}`, `v:${token}:${index}`).row();
+  }
+
+  return keyboard;
+};
+
+const pickQuestionById = (id: string): VerificationQuestion | undefined =>
+  QUESTIONS.find((question) => question.id === id);
+
+const optionsOf = (row: VerificationRow): string[] | null => {
+  const question = pickQuestionById(row.questionId);
+
+  if (question === undefined) {
+    return null;
+  }
+
+  return optionsForToken(question, row.token);
+};
+
+const verifyExpired = (row: VerificationRow): boolean =>
+  Date.now() > row.expiresAt;
+
+/**
+ * 新成员进群：立刻禁言，发欢迎语 + 私聊验证深链。
+ */
+export const handleNewMembers = async (
+  bot: Bot,
+  db: Database,
+  config: BotConfig,
+  msg: Message
+): Promise<void> => {
+  const members = msg.new_chat_members ?? [];
+  const chatId = msg.chat.id;
+
+  // 顺序处理新成员，避免同一群聊的消息触发 Telegram 频率限制。
+  for (const member of members) {
+    if (member.is_bot || member.id === bot.botInfo.id) {
+      continue;
+    }
+
+    const token = createToken();
+    const question = pickQuestion();
+    const options = optionsForToken(question, token);
+
+    const answerIndex = options.indexOf(
+      question.options[question.answer] ?? ""
+    );
+
+    const createdAt = Date.now();
+
+    logInfo("verification.created", {
+      chatId,
+      userId: member.id,
+      questionId: question.id,
+      token,
+    });
+
+    // oxlint-disable-next-line no-await-in-loop, react-doctor/async-await-in-loop -- 顺序处理入群成员，避免触发 Telegram 频率限制
+    await createVerification(db, {
+      token,
+      chatId,
+      userId: member.id,
+      questionId: question.id,
+      answerIndex,
+      createdAt,
+      expiresAt: createdAt + config.verifyTimeoutMs,
+    });
+
+    try {
+      // oxlint-disable-next-line no-await-in-loop -- 逐个禁言新成员
+      await muteMember(bot, chatId, member.id);
+    } catch (error) {
+      logWarn("verification.mute.failed", { chatId, userId: member.id }, error);
+      // oxlint-disable-next-line no-await-in-loop -- 顺序提示权限问题
+      await bot.api.sendMessage(
+        chatId,
+        "机器人缺少「限制成员」权限，无法禁言新成员，请管理员检查机器人权限。"
+      );
+    }
+
+    const seconds = Math.round(config.verifyTimeoutMs / 1000);
+    const deepLink = `https://t.me/${usernameOf(bot, config)}?start=verify_${token}`;
+
+    const text = [
+      `欢迎 ${mention(member.id, displayName(member))} 加入本群！`,
+      "",
+      "为防止机器人和广告号，请先完成验证：",
+      "1. 点击下方按钮私聊我",
+      "2. 回答一道河南师范大学相关的问题",
+      "3. 答对后自动恢复发言",
+      "",
+      `请在 ${seconds} 秒内完成。答错或超时后作答会被移出群聊；一直不答将保持禁言。`,
+      "管理员也可以直接点下方「解禁」或「踢出」。",
+    ].join("\n");
+
+    const keyboard = new InlineKeyboard()
+      .url("去验证", deepLink)
+      .row()
+      .text("解禁", `va:${token}:unmute`)
+      .text("踢出", `va:${token}:kick`);
+
+    try {
+      // oxlint-disable-next-line no-await-in-loop -- 逐个发送验证提示
+      await bot.api.sendMessage(chatId, text, {
+        parse_mode: "HTML",
+        reply_markup: keyboard,
+      });
+    } catch (error) {
+      logWarn("verification.welcome.failed", { chatId }, error);
+    }
+  }
+};
+
+/**
+ * 私聊 /start verify_<token>：展示题目。
+ */
+export const handlePrivateStart = async (
+  bot: Bot,
+  db: Database,
+  msg: Message,
+  payload: string
+): Promise<void> => {
+  const token = payload.slice("verify_".length);
+  const row = await getVerification(db, token);
+
+  if (row === null) {
+    await bot.api.sendMessage(
+      msg.chat.id,
+      "这个验证链接无效，请回群里重新点击验证按钮。"
+    );
+
+    return;
+  }
+
+  if (row.userId !== msg.from?.id) {
+    await bot.api.sendMessage(msg.chat.id, "这个验证链接不属于你。");
+
+    return;
+  }
+
+  if (row.status === "passed") {
+    await bot.api.sendMessage(
+      msg.chat.id,
+      "你已经通过验证了，直接回群里聊天即可。"
+    );
+
+    return;
+  }
+
+  if (row.status !== "pending") {
+    await bot.api.sendMessage(
+      msg.chat.id,
+      "这条验证已失效。如果仍被禁言，请联系群管理员解禁。"
+    );
+
+    return;
+  }
+
+  if (verifyExpired(row)) {
+    await bot.api.sendMessage(
+      msg.chat.id,
+      "验证已超时。你目前仍处于禁言状态，请联系群管理员解禁；如果继续作答会被移出群聊。"
+    );
+
+    return;
+  }
+
+  const question = pickQuestionById(row.questionId);
+  const options = optionsOf(row);
+
+  if (question === undefined || options === null) {
+    await setVerificationStatus(db, token, "failed", Date.now());
+    await bot.api.sendMessage(
+      msg.chat.id,
+      "题目数据异常，请联系群管理员处理。"
+    );
+
+    return;
+  }
+
+  const remaining = Math.max(
+    1,
+    Math.round((row.expiresAt - Date.now()) / 1000)
+  );
+
+  await bot.api.sendMessage(
+    msg.chat.id,
+    `【新成员验证】\n${question.text}\n\n剩余时间：${remaining} 秒\n请点击下面一个选项作答。`,
+    {
+      reply_markup: buildKeyboard(token, options),
+    }
+  );
+};
+
+/**
+ * 私聊按钮回调：答对解禁，答错或超时踢出。
+ */
+export const handleVerificationCallback = async (
+  bot: Bot,
+  db: Database,
+  query: CallbackQuery
+): Promise<void> => {
+  const data = query.data ?? "";
+
+  // 入群消息里的管理员按钮（解禁 / 踢出）先过一遍；不是这类回调再继续答题流程。
+  if (await handleVerificationAdminCallback(bot, db, query)) {
+    return;
+  }
+
+  const matched = /^v:(?<token>[0-9a-f]{32}):(?<index>\d)$/u.exec(data);
+
+  if (matched === null) {
+    await bot.api.answerCallbackQuery(query.id, {
+      text: "未知操作。",
+      show_alert: false,
+    });
+
+    return;
+  }
+
+  const token = matched.groups?.token ?? "";
+  const chosen = Number(matched.groups?.index ?? "-1");
+  const row = await getVerification(db, token);
+
+  if (row === null) {
+    await bot.api.answerCallbackQuery(query.id, {
+      text: "验证记录不存在。",
+      show_alert: true,
+    });
+
+    return;
+  }
+
+  if (row.userId !== query.from.id) {
+    await bot.api.answerCallbackQuery(query.id, {
+      text: "只能本人作答。",
+      show_alert: true,
+    });
+
+    return;
+  }
+
+  if (row.status !== "pending") {
+    await bot.api.answerCallbackQuery(query.id, {
+      text: "这条验证已经处理过了。",
+      show_alert: false,
+    });
+
+    return;
+  }
+
+  const name = displayName(query.from);
+
+  logInfo("verification.answered", {
+    chatId: row.chatId,
+    userId: row.userId,
+    token,
+    chosen,
+  });
+
+  if (verifyExpired(row)) {
+    const claimed = await setVerificationStatus(
+      db,
+      token,
+      "expired",
+      Date.now()
+    );
+
+    if (!claimed) {
+      await bot.api.answerCallbackQuery(query.id, {
+        text: "这条验证已经处理过了。",
+        show_alert: false,
+      });
+
+      return;
+    }
+
+    logInfo("verification.expired", { chatId: row.chatId, userId: row.userId });
+
+    try {
+      await kickMember(bot, row.chatId, row.userId);
+      await bot.api.sendMessage(
+        row.chatId,
+        `${mention(row.userId, name)} 的验证已超时，已被移出群聊。`,
+        { parse_mode: "HTML" }
+      );
+    } catch (error) {
+      logWarn(
+        "verification.expired.kick.failed",
+        { chatId: row.chatId },
+        error
+      );
+    }
+
+    await bot.api.answerCallbackQuery(query.id, {
+      text: "验证已超时，你已被移出群聊。",
+      show_alert: true,
+    });
+
+    return;
+  }
+
+  if (chosen === row.answerIndex) {
+    const claimed = await setVerificationStatus(
+      db,
+      token,
+      "passed",
+      Date.now()
+    );
+
+    if (!claimed) {
+      await bot.api.answerCallbackQuery(query.id, {
+        text: "这条验证已经处理过了。",
+        show_alert: false,
+      });
+
+      return;
+    }
+
+    logInfo("verification.passed", { chatId: row.chatId, userId: row.userId });
+
+    try {
+      await unmuteMember(bot, row.chatId, row.userId);
+      await bot.api.sendMessage(
+        row.chatId,
+        `${mention(row.userId, name)} 已通过验证，欢迎加入聊天！`,
+        { parse_mode: "HTML" }
+      );
+    } catch (error) {
+      logWarn("verification.unmute.failed", { chatId: row.chatId }, error);
+    }
+
+    await bot.api.answerCallbackQuery(query.id, {
+      text: "验证通过，欢迎加入！",
+      show_alert: false,
+    });
+
+    return;
+  }
+
+  const claimed = await setVerificationStatus(db, token, "failed", Date.now());
+
+  if (!claimed) {
+    await bot.api.answerCallbackQuery(query.id, {
+      text: "这条验证已经处理过了。",
+      show_alert: false,
+    });
+
+    return;
+  }
+
+  logInfo("verification.failed", { chatId: row.chatId, userId: row.userId });
+
+  try {
+    await kickMember(bot, row.chatId, row.userId);
+    await bot.api.sendMessage(
+      row.chatId,
+      `${mention(row.userId, name)} 验证答错，已被移出群聊。`,
+      { parse_mode: "HTML" }
+    );
+  } catch (error) {
+    logWarn("verification.failed.kick.failed", { chatId: row.chatId }, error);
+  }
+
+  await bot.api.answerCallbackQuery(query.id, {
+    text: "答案错误，你已被移出群聊。",
+    show_alert: true,
+  });
+};
+
+/**
+ * 私聊收到普通文本：有待验证就提醒点按钮、超时则踢出；
+ * 没有待验证则返回 false，交给 AI 聊天处理。
+ * 返回 true 表示这条消息已经被验证流程处理。
+ */
+export const handlePrivateText = async (
+  bot: Bot,
+  db: Database,
+  msg: Message
+): Promise<boolean> => {
+  const sender: User | undefined = msg.from;
+
+  if (sender === undefined) {
+    return true;
+  }
+
+  const row = await getPendingVerificationByUser(db, sender.id);
+
+  if (row === null) {
+    return false;
+  }
+
+  const name = displayName(sender);
+
+  if (verifyExpired(row)) {
+    const claimed = await setVerificationStatus(
+      db,
+      row.token,
+      "expired",
+      Date.now()
+    );
+
+    if (claimed) {
+      try {
+        await kickMember(bot, row.chatId, row.userId);
+        await bot.api.sendMessage(
+          row.chatId,
+          `${mention(row.userId, name)} 超时后继续作答，已被移出群聊。`,
+          { parse_mode: "HTML" }
+        );
+      } catch (error) {
+        logWarn("verification.late.kick.failed", { chatId: row.chatId }, error);
+      }
+
+      await bot.api.sendMessage(msg.chat.id, "验证已超时，你已被移出群聊。");
+
+      return true;
+    }
+  }
+
+  await bot.api.sendMessage(
+    msg.chat.id,
+    "请点击上一条验证消息里的选项按钮作答。"
+  );
+
+  return true;
+};

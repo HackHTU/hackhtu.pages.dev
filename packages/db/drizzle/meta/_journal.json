@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1793298176649,
+      "tag": "0000_bumpy_peter_quill",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1793370255264,
+      "tag": "0001_tired_star_brand",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1793423277418,
+      "tag": "0002_milky_viper",
+      "breakpoints": true
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "hackhtu",
+  "pages_build_output_dir": "apps/web/dist",
+  "compatibility_date": "2026-10-29",
+  "compatibility_flags": ["nodejs_compat"],
+  "vars": {
+    "BOT_USERNAME": "hackHTUbot",
+    "ALLOWED_CHATS": "@HackHTU,@HackHTUDEV",
+    "RSS_FEEDS": "教务通知=https://rss.htu.me/rss/htu/teaching/3251,公示公告=https://rss.htu.me/rss/htu/teaching/3258,考务管理=https://rss.htu.me/rss/htu/teaching/kwgl",
+    "NOTIFY_CHATS": "-1001918752754",
+    "BAN_DURATION_SECONDS": "86400",
+    "VERIFY_TIMEOUT_SECONDS": "120",
+    "AI_CONTEXT_TOKEN_LIMIT": "8000",
+    "AI_MODEL": "@cf/qwen/qwen3.8-27b",
+    "AI_TRIAGE_MODEL": "@cf/cloudflare/clef-flash",
+    "AI_TRIAGE_THRESHOLD": "0.5",
+    "AI_MEMORY_LIMIT": "4000",
+    "AI_REASONING": "low",
+    "AI_CAPABILITIES": "text,image,audio",
+    "STICKER_SET": "spv_3f97a3558a8c83338ff83621f0ab838b_by_stckrRobot",
+    "LOG_LEVEL": "info",
+    "TURNSTILE_HOSTNAMES": "localhost,127.0.0.1,hackhtu.pages.dev",
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "HackHTUDB",
+      "database_id": "cc43a26d-bc53-48c8-8782-eacd0ff97f5c",
+      "migrations_dir": "packages/db/drizzle",
+    },
+  ],
+  "ai": {
+    "binding": "AI",
+    "remote": true,
+  },
+}

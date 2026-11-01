@@ -1,0 +1,29 @@
+{
+  "files": [],
+  "references": [
+    {
+      "path": "./packages/contracts"
+    },
+    {
+      "path": "./packages/db"
+    },
+    {
+      "path": "./packages/ai"
+    },
+    {
+      "path": "./apps/api"
+    },
+    {
+      "path": "./apps/bot"
+    },
+    {
+      "path": "./apps/bot/scripts"
+    },
+    {
+      "path": "./apps/web"
+    }
+  ],
+  "compilerOptions": {
+    "strictNullChecks": true
+  }
+}

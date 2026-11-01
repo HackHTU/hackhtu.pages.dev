@@ -1,0 +1,43 @@
+{
+  "name": "@hackhtu/web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "predev": "bun scripts/sync-htu-tui.ts",
+    "dev": "vite",
+    "prebuild": "bun scripts/sync-htu-tui.ts",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@hackhtu/api": "workspace:*",
+    "@hackhtu/contracts": "workspace:*",
+    "@hookform/resolvers": "catalog:",
+    "@phosphor-icons/react": "catalog:",
+    "@tanstack/react-query": "catalog:",
+    "@tanstack/react-router": "catalog:",
+    "@tanstack/react-table": "catalog:",
+    "@zumer/snapdom": "catalog:",
+    "class-variance-authority": "catalog:",
+    "cn": "catalog:",
+    "qrcode": "catalog:",
+    "radix-ui": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "react-hook-form": "catalog:",
+    "react-turnstile": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "catalog:",
+    "@types/qrcode": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@vitejs/plugin-react": "catalog:",
+    "tailwindcss": "catalog:",
+    "tw-animate-css": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vite-plugin-pwa": "catalog:"
+  }
+}

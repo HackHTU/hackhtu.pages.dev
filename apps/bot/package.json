@@ -1,0 +1,25 @@
+{
+  "name": "@hackhtu/bot",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/app.ts"
+  },
+  "scripts": {
+    "webhook": "bun --env-file ../../.env scripts/webhook.ts",
+    "poll": "bun --env-file ../../.env scripts/poll.ts",
+    "poll:local": "bun --env-file ../../.env scripts/poll.ts --url http://localhost:8788"
+  },
+  "dependencies": {
+    "@grammyjs/auto-retry": "catalog:",
+    "@grammyjs/stream": "catalog:",
+    "@hackhtu/ai": "workspace:*",
+    "@hackhtu/db": "workspace:*",
+    "ai": "catalog:",
+    "grammy": "catalog:",
+    "pagemd": "catalog:",
+    "rss-parser": "catalog:",
+    "workers-ai-provider": "catalog:",
+    "zod": "catalog:"
+  }
+}

@@ -1,0 +1,23 @@
+# dependencies and generated Cloudflare state
+node_modules
+.wrangler
+.cloudflare
+dist
+*.tsbuildinfo
+
+# local scratch (plans, todos, temp)
+.tmp
+.plan
+.todo
+
+# generated copies of tools/htu-tui for the download page
+apps/web/public/downloads
+
+# some inportant files
+.env
+.env.local
+.env.*.local
+.dev.vars
+
+# fuck automake files
+.DS_Store
