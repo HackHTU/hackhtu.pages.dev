@@ -6,6 +6,7 @@ export interface TelegramBody {
   url?: string;
   secret_token?: string;
   commands?: { command: string; description: string }[];
+  scope?: { type: string; chat_id?: number | string };
 }
 
 /**

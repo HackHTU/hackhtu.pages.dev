@@ -23,6 +23,17 @@ const args = process.argv.slice(2);
 const base =
   readArg(args, "--url") ?? env.get("BOT_URL") ?? "https://hackhtu.pages.dev";
 
+/**
+ * Telegram 的命令菜单按「最具体的 scope 优先」匹配，
+ * 只要这些 scope 里塞了旧命令，就会盖住 default 菜单。
+ * 每次同步时清一遍，避免残留（曾经有别的 bot 共用同一个 token）。
+ */
+const STALE_COMMAND_SCOPES = [
+  { type: "all_private_chats" },
+  { type: "all_group_chats" },
+  { type: "all_chat_administrators" },
+];
+
 const call = async (
   method: string,
   body: TelegramBody
@@ -76,6 +87,21 @@ if (result.ok) {
     logWarn("commands.set.failed", {
       description: commands.description ?? "未知错误",
     });
+  }
+
+  // 清掉其它 scope 的残留命令，否则群聊/私聊会继续显示旧菜单。
+  for (const scope of STALE_COMMAND_SCOPES) {
+    // oxlint-disable-next-line no-await-in-loop, react-doctor/async-await-in-loop -- 顺序调用，次数固定为 3
+    const cleared = await call("deleteMyCommands", { scope });
+
+    if (cleared.ok) {
+      logInfo("commands.cleared", { scope: scope.type });
+    } else {
+      logWarn("commands.clear.failed", {
+        scope: scope.type,
+        description: cleared.description ?? "未知错误",
+      });
+    }
   }
 } else {
   logWarn("webhook.set.failed", {
