@@ -1,4 +1,4 @@
-import { aiContext } from "@hackhtu/db";
+import { aiContext, aiSummary } from "@hackhtu/db";
 import type { Database } from "@hackhtu/db";
 import type { FilePart, TextPart, UserModelMessage } from "ai";
 import { desc, eq, sql } from "drizzle-orm";
@@ -65,6 +65,18 @@ export const loadHistory = async (
         ? normalizeAssistantHistory(row.content)
         : stripMessageWrapper(row.content),
   }));
+};
+
+/**
+ * 清空一个会话的上下文：聊天记录和压缩摘要都删掉。
+ * 长期记忆（ai_memory）不在范围内，由 forget 工具单独管理。
+ */
+export const clearHistory = async (
+  db: Database,
+  chatId: number
+): Promise<void> => {
+  await db.delete(aiContext).where(eq(aiContext.chatId, chatId));
+  await db.delete(aiSummary).where(eq(aiSummary.chatId, chatId));
 };
 
 /** 每个 chat 只保留最近 `keep` 条，避免 ai_context 无限增长。 */

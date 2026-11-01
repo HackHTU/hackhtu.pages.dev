@@ -10,6 +10,7 @@ import { handleLinkCleaner } from "../features/link-cleaner";
 import { handleSoutu } from "../features/soutu";
 import { logDebug, logInfo } from "../lib/log";
 import { isMemberOfAnyChat } from "../lib/telegram";
+import { handleCleanCommand } from "./clean";
 import { handleAdminCommand, moderateMessage } from "./moderation";
 import {
   handleNewMembers,
@@ -28,6 +29,7 @@ const HELP_TEXT = [
   "- /ban [分钟]：回复某人或 /ban <用户ID> [分钟] 禁言",
   "- /banl：回复某人或 /banl <用户ID> 踢出群聊",
   "- /unban：回复某人或 /unban <用户ID> 解除禁言/封禁",
+  "- /clean：清空本会话的 AI 聊天记录和摘要（群聊仅管理员可用）",
   "- /soutu：回复图片后使用识图",
   "- 发送带追踪参数的链接会自动回复清理后的内容",
   "- 在群里 @我、回复我的消息，我会直接接话；其他消息我自己判断要不要聊",
@@ -65,6 +67,12 @@ const handlePrivateMessage = async (
   }
 
   if (!text.startsWith("/start")) {
+    if (commandOf(text) === "/clean") {
+      await handleCleanCommand(bot, db, msg);
+
+      return;
+    }
+
     const handled = await handlePrivateText(bot, db, msg);
 
     if (!handled) {
@@ -110,6 +118,12 @@ const handleCommand = async (
 
   if (command === "/soutu") {
     await handleSoutu(bot, msg, origin);
+
+    return;
+  }
+
+  if (command === "/clean") {
+    await handleCleanCommand(bot, db, msg);
 
     return;
   }

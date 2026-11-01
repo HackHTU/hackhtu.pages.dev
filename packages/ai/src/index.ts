@@ -24,6 +24,7 @@ export { compressLastMessage } from "./context/compress";
 
 export {
   addHistory,
+  clearHistory,
   loadHistory,
   MAX_HISTORY,
   pruneHistory,
