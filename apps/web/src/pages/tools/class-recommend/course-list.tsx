@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 
 import { insightForSummary } from "./insight";
 import { InsightPill } from "./insight-pill";
-import { averageLabel } from "./types";
+import { averageLabel, teacherText } from "./types";
 import type { ClassRow } from "./types";
 
 export const CourseList = ({
@@ -72,11 +72,12 @@ export const CourseList = ({
     ) : null}
     {visibleCourses.map((course, index) => {
       const insight = insightForSummary(course);
+      const teacher = teacherText(course);
       const active = selected?.id === course.id;
 
       return (
         <button
-          aria-label={`查看 ${course.name} 详情`}
+          aria-label={`查看 ${course.name}${teacher === "" ? "" : `（${teacher}）`} 详情`}
           className={cn(
             "group bg-card hover:border-foreground/40 focus-visible:ring-ring w-full rounded-2xl border p-5 text-left transition duration-300 ease-out hover:-translate-y-0.5 hover:shadow-lg focus-visible:ring-2 focus-visible:outline-none",
             active ? "border-foreground shadow-md" : "border-border"
@@ -97,6 +98,11 @@ export const CourseList = ({
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
                     <h3 className="text-lg font-semibold">{course.name}</h3>
+                    {teacher === "" ? null : (
+                      <span className="bg-secondary text-secondary-foreground rounded-full px-2.5 py-1 text-xs font-semibold">
+                        {teacher}
+                      </span>
+                    )}
                   </div>
                   <p className="text-muted-foreground mt-1 text-sm">
                     {course.term} · {course.category} · {course.method}

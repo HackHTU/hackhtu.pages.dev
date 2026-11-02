@@ -14,7 +14,12 @@ import { cn } from "@/lib/utils";
 import { RatingBars } from "./rating-bars";
 import { ScoreRing } from "./score-ring";
 import { TurnstileWidget } from "./turnstile-widget";
-import { ATTITUDE_VALUES, attitudeLabel, isAttitude } from "./types";
+import {
+  ATTITUDE_VALUES,
+  attitudeLabel,
+  isAttitude,
+  teacherText,
+} from "./types";
 import type {
   ClassRow,
   CourseInsight,
@@ -55,8 +60,14 @@ export const CourseDetailDialog = ({
   onToken: (token: string | null) => void;
   turnstileKey: number;
   attitude: unknown;
-}) =>
-  selected === null ? null : (
+}) => {
+  if (selected === null) {
+    return null;
+  }
+
+  const teacher = teacherText(selected);
+
+  return (
     <div
       className="bg-foreground/30 fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
       role="presentation"
@@ -80,7 +91,8 @@ export const CourseDetailDialog = ({
               {selected.name}
             </h2>
             <p className="text-muted-foreground mt-2 text-sm">
-              {selected.term} · {selected.category} · {selected.method} ·{" "}
+              {selected.term} · {selected.category} · {selected.method}
+              {teacher === "" ? "" : ` · ${teacher}`} ·{" "}
               {selected.credits ?? "—"} 学分
             </p>
           </div>
@@ -245,3 +257,4 @@ export const CourseDetailDialog = ({
       </dialog>
     </div>
   );
+};

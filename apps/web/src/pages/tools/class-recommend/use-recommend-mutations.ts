@@ -75,6 +75,7 @@ export const useRecommendMutations = ({
       hours: number | null;
       category: string;
       method: string;
+      teacherName: string | null;
       turnstileToken: string;
     }) => {
       const res = await api.classes.$post({ json: values });
@@ -95,6 +96,7 @@ export const useRecommendMutations = ({
         hours: null,
         category: "",
         method: "",
+        teacherName: "",
         turnstileToken: "",
       });
       setCreateTurnstileKey((value) => value + 1);

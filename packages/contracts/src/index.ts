@@ -20,6 +20,13 @@ const optionalIntegerSchema = z.preprocess(
   z.coerce.number().int().min(0).max(1000).nullable()
 );
 
+/** 老师名等可留空的短文本；空串统一收敛成 null。 */
+const optionalTextSchema = z.preprocess(
+  (value) =>
+    value === "" || value === null || value === undefined ? null : value,
+  z.string().trim().max(40).nullable()
+);
+
 export const createClassBodySchema = z.object({
   term: z.string().trim().min(1).max(40),
   name: z.string().trim().min(1).max(80),
@@ -27,6 +34,8 @@ export const createClassBodySchema = z.object({
   hours: optionalIntegerSchema,
   category: z.string().trim().min(1).max(40),
   method: z.string().trim().min(1).max(40),
+  // 同名课程可能由 1-2 位老师开设，老师名用于区分同名课。
+  teacherName: optionalTextSchema,
   turnstileToken: z.string().trim().min(1).max(2048),
 });
 

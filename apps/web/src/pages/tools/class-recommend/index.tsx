@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { api } from "@/lib/api";
 
 import { CourseDetailDialog } from "./course-detail-dialog";
@@ -23,13 +24,15 @@ export const ClassRecommendPage = () => {
   const [category, setCategory] = useState("全部分类");
   const [method, setMethod] = useState("全部方式");
   const [selected, setSelected] = useState<ClassRow | null>(null);
-  const [showFilters, setShowFilters] = useState(false);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [turnstileKey, setTurnstileKey] = useState(0);
   const [showCreateClass, setShowCreateClass] = useState(false);
   const [createTurnstileKey, setCreateTurnstileKey] = useState(0);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(12);
+
+  // 搜索关键词防抖，避免每敲一个字就把整个课程列表重算一遍。
+  const debouncedQuery = useDebouncedValue(query, 250);
 
   const classesQuery = useQuery({
     queryKey: ["classes"],
@@ -75,6 +78,7 @@ export const ClassRecommendPage = () => {
       hours: null,
       category: "",
       method: "",
+      teacherName: "",
       turnstileToken: "",
     },
   });
@@ -139,10 +143,11 @@ export const ClassRecommendPage = () => {
     () =>
       classes
         .filter((course) => {
-          const matchQuery =
-            `${course.name} ${course.category} ${course.method} ${course.term}`
-              .toLowerCase()
-              .includes(query.toLowerCase());
+          const matchQuery = `${course.name} ${course.teacherName ?? ""} ${
+            course.category
+          } ${course.method} ${course.term}`
+            .toLowerCase()
+            .includes(debouncedQuery.toLowerCase());
 
           return (
             matchQuery &&
@@ -175,7 +180,7 @@ export const ClassRecommendPage = () => {
             bInsight.reviewCount - aInsight.reviewCount
           );
         }),
-    [category, classes, method, query, sort]
+    [category, classes, debouncedQuery, method, sort]
   );
 
   const categories = [
@@ -212,7 +217,17 @@ export const ClassRecommendPage = () => {
 
   return (
     <main className="mx-auto max-w-7xl px-6 pt-6 pb-24 sm:pt-8">
-      <SearchSection query={query} setQuery={setQuery} setPage={setPage} />
+      <SearchSection
+        query={query}
+        setQuery={setQuery}
+        setPage={setPage}
+        category={category}
+        setCategory={setCategory}
+        method={method}
+        setMethod={setMethod}
+        categories={categories}
+        methods={methods}
+      />
 
       <section
         className="mt-14 grid gap-8 lg:grid-cols-[minmax(0,1fr)_22rem]"
@@ -224,14 +239,6 @@ export const ClassRecommendPage = () => {
             setSort={setSort}
             setPage={setPage}
             setShowCreateClass={setShowCreateClass}
-            showFilters={showFilters}
-            setShowFilters={setShowFilters}
-            category={category}
-            setCategory={setCategory}
-            method={method}
-            setMethod={setMethod}
-            categories={categories}
-            methods={methods}
           />
 
           <CourseList

@@ -91,6 +91,20 @@ export const CreateClassDialog = ({
               </span>
             ) : null}
           </Label>
+          <Label className="sm:col-span-2" htmlFor="new-class-teacher">
+            任课老师（选填，多位用「、」隔开）
+            <Input
+              id="new-class-teacher"
+              className="mt-2"
+              placeholder="例如：王强、李明"
+              {...form.register("teacherName")}
+            />
+            {form.formState.errors.teacherName ? (
+              <span className="text-destructive mt-1 block text-sm">
+                {form.formState.errors.teacherName.message}
+              </span>
+            ) : null}
+          </Label>
           <Label htmlFor="new-class-term">
             开课时间
             <Input

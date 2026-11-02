@@ -17,6 +17,7 @@ export type WebNotifyEvent =
       method: string;
       credits: number | null;
       hours: number | null;
+      teacher: string | null;
     }
   | {
       type: "review";
@@ -104,6 +105,7 @@ const renderEvent = (event: WebNotifyEvent, origin: string): string => {
       `**学期**：${escapeMarkdown(event.term)}`,
       `**类别**：${escapeMarkdown(event.category)}`,
       `**方式**：${escapeMarkdown(event.method)}`,
+      `**老师**：${orDash(event.teacher)}`,
       `**学分 / 学时**：${orDash(event.credits)} / ${orDash(event.hours)}`,
       "",
       `[去课程推荐看看](${origin}${SITE_LINKS.classes})`,

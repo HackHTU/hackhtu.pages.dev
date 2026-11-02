@@ -4,6 +4,7 @@ import type { Dispatch, SetStateAction } from "react";
 import { cn } from "@/lib/utils";
 
 import { insightForSummary } from "./insight";
+import { teacherText } from "./types";
 import type { ClassRow } from "./types";
 
 export const RankingSidebar = ({
@@ -37,6 +38,7 @@ export const RankingSidebar = ({
         ) : (
           topCourses.map((course, index) => {
             const insight = insightForSummary(course);
+            const teacher = teacherText(course);
 
             return (
               <li key={course.id}>
@@ -61,7 +63,8 @@ export const RankingSidebar = ({
                     <span className="block truncate font-semibold">
                       {course.name}
                     </span>
-                    <span className="text-muted-foreground mt-0.5 block text-xs">
+                    <span className="text-muted-foreground mt-0.5 block truncate text-xs">
+                      {teacher === "" ? "" : `${teacher} · `}
                       {insight.reviewCount} 条评价 · {insight.trust}
                     </span>
                   </span>

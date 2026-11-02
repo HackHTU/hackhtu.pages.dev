@@ -34,6 +34,8 @@ export interface ClassRow {
   hours: number | null;
   category: string;
   method: string;
+  /** 同名课程可能由不同老师开设，用于区分；可空。 */
+  teacherName?: string | null;
   reviewCount?: number;
   averageAttitude?: number;
 }
@@ -63,6 +65,14 @@ export const SORT_KEYS = ["recommendation", "reviews", "credits"] as const;
 
 export const isSortKey = (value: string): value is SortKey =>
   SORT_KEYS.some((key) => key === value);
+
+/** 老师名展示文本；null、undefined 和空白统一视为未填写，返回空串。 */
+export const teacherText = (course: ClassRow): string =>
+  course.teacherName === null ||
+  course.teacherName === undefined ||
+  course.teacherName.trim() === ""
+    ? ""
+    : course.teacherName;
 
 export const isAttitude = (value: number): value is Attitude =>
   ATTITUDE_VALUES.some((item) => item === value);

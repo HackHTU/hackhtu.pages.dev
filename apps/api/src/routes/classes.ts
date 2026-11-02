@@ -84,6 +84,7 @@ export const classesRoutes = new Hono<{ Bindings: Bindings }>()
         hours: body.hours,
         category: body.category,
         method: body.method,
+        teacherName: body.teacherName,
       })
       .returning();
 
@@ -95,6 +96,7 @@ export const classesRoutes = new Hono<{ Bindings: Bindings }>()
       method: created.method,
       credits: created.credits,
       hours: created.hours,
+      teacher: created.teacherName,
     });
 
     return c.json({ ...created, reviewCount: 0, averageAttitude: 0 }, 201);
