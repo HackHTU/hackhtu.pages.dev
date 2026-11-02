@@ -3,7 +3,6 @@ import {
   createRootRoute,
   createRoute,
   createRouter,
-  redirect,
   RouterProvider,
 } from "@tanstack/react-router";
 import { lazy, StrictMode, Suspense } from "react";
@@ -169,17 +168,6 @@ const campusLoginRoute = createRoute({
   ),
 });
 
-// 旧链接（/tools/fake-notebook）仍然可用，统一跳到新地址。
-const leaveSlipLegacyRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/tools/fake-notebook",
-  beforeLoad: () => {
-    // SAFETY: TanStack Router expects redirects to be thrown from beforeLoad.
-    // oxlint-disable-next-line typescript/only-throw-error
-    throw redirect({ to: "/tools/leave-slip" });
-  },
-});
-
 const joinUsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/pages/joinus",
@@ -266,7 +254,6 @@ const router = createRouter({
     classRecommendRoute,
     locationSimulationTutorialRoute,
     leaveSlipRoute,
-    leaveSlipLegacyRoute,
     newsRoute,
     campusLoginRoute,
     joinUsRoute,

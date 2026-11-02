@@ -14,6 +14,43 @@ import { InsightPill } from "./insight-pill";
 import { averageLabel, teacherText } from "./types";
 import type { ClassRow } from "./types";
 
+/** 加载中的课程卡片骨架：按真实卡片的排版摆占位条，加载完成不会跳动。 */
+const CourseCardSkeleton = () => (
+  <div aria-hidden className="border-border bg-card rounded-2xl border p-5">
+    <div className="flex gap-4">
+      <div className="hidden w-7 shrink-0 sm:block" />
+      <div className="min-w-0 flex-1">
+        <div className="flex items-start justify-between gap-3">
+          <div className="w-full max-w-sm space-y-3">
+            <div className="bg-muted h-5 w-44 animate-pulse rounded-full" />
+            <div className="bg-muted h-3 w-64 max-w-full animate-pulse rounded-full" />
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="flex flex-col items-end gap-1.5">
+              <div className="bg-muted h-7 w-10 animate-pulse" />
+              <div className="bg-muted h-2.5 w-14 animate-pulse rounded-full" />
+            </div>
+            <div className="bg-muted size-5 animate-pulse rounded-full" />
+          </div>
+        </div>
+        <div className="mt-5 flex flex-wrap items-center gap-2">
+          <div className="bg-muted h-6 w-24 animate-pulse rounded-full" />
+          <div className="bg-muted h-6 w-16 animate-pulse rounded-full" />
+          <div className="bg-muted h-6 w-20 animate-pulse rounded-full" />
+        </div>
+        <div className="mt-5 grid grid-cols-3 gap-3">
+          {[0, 1, 2].map((item) => (
+            <div className="space-y-2" key={item}>
+              <div className="bg-muted h-3 w-16 max-w-full animate-pulse rounded-full" />
+              <div className="bg-muted h-4 w-20 max-w-full animate-pulse rounded-full" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
 export const CourseList = ({
   classesQuery,
   selected,
@@ -45,7 +82,7 @@ export const CourseList = ({
     {classesQuery.isLoading ? (
       <div className="space-y-3" aria-label="正在加载课程">
         {[1, 2, 3].map((item) => (
-          <div className="bg-muted h-40 animate-pulse rounded-2xl" key={item} />
+          <CourseCardSkeleton key={item} />
         ))}
       </div>
     ) : null}

@@ -216,7 +216,19 @@ export const CourseDetailDialog = ({
             ) : null}
             <div className="mt-6 space-y-3">
               {reviewsLoading ? (
-                <div className="bg-muted h-32 animate-pulse rounded-xl" />
+                <div
+                  aria-hidden
+                  className="border-border rounded-2xl border p-4"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="bg-muted h-4 w-24 animate-pulse rounded-full" />
+                    <div className="bg-muted h-3 w-14 animate-pulse rounded-full" />
+                  </div>
+                  <div className="mt-4 space-y-2">
+                    <div className="bg-muted h-3 w-full animate-pulse rounded-full" />
+                    <div className="bg-muted h-3 w-3/4 animate-pulse rounded-full" />
+                  </div>
+                </div>
               ) : null}
               {!reviewsLoading && reviews.length === 0 ? (
                 <div className="border-border rounded-2xl border border-dashed p-8 text-center">

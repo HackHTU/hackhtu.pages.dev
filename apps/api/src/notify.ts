@@ -88,18 +88,18 @@ const escapeMarkdown = (input: string): string =>
 const renderEvent = (event: WebNotifyEvent, origin: string): string => {
   if (event.type === "comment") {
     return [
-      "**💬 站点收到新评论**",
+      "**💬 站点收到新评论** #新评论",
       "",
       `**称呼**：${escapeMarkdown(event.nickname)}`,
       `**内容**：${escapeMarkdown(event.body)}`,
       "",
       `[去评论区看看](${origin}${SITE_LINKS.comments})`,
-    ].join("\n");
+    ].join("\n\n");
   }
 
   if (event.type === "class") {
     return [
-      "**📚 新增课程**",
+      "**📚 新增课程** #新增课程",
       "",
       `**课程**：${escapeMarkdown(event.name)}`,
       `**学期**：${escapeMarkdown(event.term)}`,
@@ -109,18 +109,19 @@ const renderEvent = (event: WebNotifyEvent, origin: string): string => {
       `**学分 / 学时**：${orDash(event.credits)} / ${orDash(event.hours)}`,
       "",
       `[去课程推荐看看](${origin}${SITE_LINKS.classes})`,
-    ].join("\n");
+    ].join("\n\n");
   }
 
   return [
-    "**⭐ 新增课程评价**",
+    "**⭐ 新增课程评价** #课程评价",
     "",
     `**课程**：${escapeMarkdown(event.className)}`,
     `**态度**：${ATTITUDE_LABELS.get(event.attitude) ?? "未知"}`,
-    `**评价**：${escapeMarkdown(orDash(event.comment))}`,
+    // 评价正文可能带换行；单换行在 rich message 里会被折叠，压成空格保住段落结构。
+    `**评价**：${escapeMarkdown(orDash(event.comment)).replaceAll(/\n+/gu, " ")}`,
     "",
     `[去课程推荐看看](${origin}${SITE_LINKS.classes})`,
-  ].join("\n");
+  ].join("\n\n");
 };
 
 /** 只覆盖本站用到的两种 send 方法负载。 */
