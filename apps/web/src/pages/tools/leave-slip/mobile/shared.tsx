@@ -85,7 +85,7 @@ export const buildReplicaData = (
   );
 
   const defaultReason =
-    leaveCategory === "病假" ? "身体不适，需要就医休息" : "实习";
+    leaveCategory === "病假" ? "身体不适，需要就医休息" : "个人事务";
 
   return {
     img: local.img === "" ? fallbackAvatar : local.img,
@@ -98,14 +98,14 @@ export const buildReplicaData = (
     className: local.major,
     phone: local.phoneNumber1 === "" ? "—" : local.phoneNumber1,
     dorm: "",
-    startTime: formatMinute(session.startTime) || "2026-10-29 14:00",
-    endTime: formatMinute(session.endTime) || "2026-10-30 22:00",
+    startTime: formatMinute(session.startTime) || "2026-01-01 08:00",
+    endTime: formatMinute(session.endTime) || "2026-01-01 18:00",
     type,
     reason: session.reason === "" ? defaultReason : session.reason,
     reviewer: session.reviewPeople === "" ? "—" : session.reviewPeople,
-    approveTime: formatMinute(session.approvetime) || "2026-10-29 14:44",
-    submitTime: formatSecond(session.submitTime, "33") || "2026-10-29 14:43:33",
-    reviewTime: formatSecond(session.reviewTime, "28") || "2026-10-29 14:44:28",
+    approveTime: formatMinute(session.approvetime) || "2026-01-01 07:45",
+    submitTime: formatSecond(session.submitTime, "33") || "2026-01-01 07:30:00",
+    reviewTime: formatSecond(session.reviewTime, "28") || "2026-01-01 07:45:00",
     leaveCategory,
     leaveSubtype,
     leaveCampus: session.leaveCampus,

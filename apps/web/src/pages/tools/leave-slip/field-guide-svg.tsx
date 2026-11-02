@@ -95,7 +95,7 @@ export const SlipGuideSvg = ({
       请假条
     </text>
     <text fill="#ff0000" font-size="7" textAnchor="middle" x="150" y="92">
-      河南师范大学 计算机与信息工程学院
+      河南师范大学 某某某学院
     </text>
 
     <circle
@@ -142,14 +142,14 @@ export const SlipGuideSvg = ({
       起
     </text>
     <text fill="#343a40" font-size="9" x="66" y="212">
-      2026-10-29 14:00
+      2026-01-01 08:00
     </text>
     <line stroke="#e3ebf5" strokeWidth="1" x1="42" x2="258" y1="220" y2="220" />
     <text fill="#666666" font-size="7" x="48" y="234">
       至
     </text>
     <text fill="#343a40" font-size="9" x="66" y="234">
-      2026-10-30 22:00
+      2026-01-01 18:00
     </text>
     <line stroke="#e3ebf5" strokeWidth="1" x1="42" x2="258" y1="242" y2="242" />
 
@@ -161,7 +161,7 @@ export const SlipGuideSvg = ({
       审批人：—
     </text>
     <text fill="#666666" font-size="8" x="104" y="300">
-      批准时间：2026-10-29 14:44
+      批准时间：2026-01-01 07:45
     </text>
 
     <text fill="#0a5fc4" font-size="8" textAnchor="middle" x="150" y="330">
@@ -293,13 +293,13 @@ export const DetailGuideSvg = ({
         同学
       </text>
       <text fill="#6c757d" font-size="5" x="102" y="81">
-        班级：人工智能
+        班级：某某专业
       </text>
       <text fill="#555555" font-size="7" x="30" y="92">
         提交时间
       </text>
       <text fill="#555555" font-size="7" x="102" y="92">
-        2026-10-29 14:43:33
+        2026-01-01 07:30:00
       </text>
       <text fill="#555555" font-size="7" x="30" y="108">
         流程方案
@@ -369,7 +369,7 @@ export const DetailGuideSvg = ({
         y="258"
       />
       <text fill="#333333" font-size="6" x="35" y="267">
-        2026-10-29 14:00
+        2026-01-01 08:00
       </text>
 
       <text fill="#333333" font-size="7" font-weight="700" x="30" y="288">
@@ -385,7 +385,7 @@ export const DetailGuideSvg = ({
         y="292"
       />
       <text fill="#333333" font-size="6" x="35" y="301">
-        2026-10-30 22:00
+        2026-01-01 18:00
       </text>
 
       <text fill="#333333" font-size="7" font-weight="700" x="30" y="322">
@@ -393,7 +393,7 @@ export const DetailGuideSvg = ({
       </text>
       <rect fill="#e9ecef" height="24" rx="2" width="240" x="30" y="326" />
       <text fill="#333333" font-size="6" x="35" y="339">
-        实习
+        个人事务
       </text>
 
       <text fill="#333333" font-size="7" font-weight="700" x="30" y="368">
