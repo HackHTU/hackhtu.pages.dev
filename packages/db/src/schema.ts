@@ -1,4 +1,10 @@
-import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import {
+  index,
+  integer,
+  real,
+  sqliteTable,
+  text,
+} from "drizzle-orm/sqlite-core";
 
 export {
   aiContext,
@@ -41,4 +47,45 @@ export const classReviews = sqliteTable(
     comment: text("comment"),
   },
   (table) => [index("idx_class_reviews_class").on(table.classId)]
+);
+
+/**
+ * 美食地点；不绑定校区，一次全量加载，校区只是前端地图视野。
+ * 坐标为 GCJ-02（与高德瓦片/高德 App 拾取一致，全程不纠偏）。
+ * 没有 R2，图片和外部内容都靠 `image_url` 与 `link_url` 外链承载。
+ */
+export const foodSpots = sqliteTable("food_spots", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  address: text("address"),
+  latitude: real("latitude").notNull(),
+  longitude: real("longitude").notNull(),
+  /** 外部链接（小红书/美团/高德等）。 */
+  linkUrl: text("link_url"),
+  /** JSON：`string[]` 推荐菜。 */
+  dishes: text("dishes"),
+  nickname: text("nickname").notNull(),
+  createdAt: text("created_at").notNull(),
+});
+
+export const foodReviews = sqliteTable(
+  "food_reviews",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    spotId: integer("spot_id").notNull(),
+    nickname: text("nickname").notNull(),
+    rating: integer("rating").notNull(),
+    taste: integer("taste"),
+    portion: integer("portion"),
+    environment: integer("environment"),
+    body: text("body"),
+    /** 外部链接（小红书/美团/高德等）。 */
+    linkUrl: text("link_url"),
+    /** JSON：`string[]` 推荐菜。 */
+    dishes: text("dishes"),
+    createdAt: text("created_at").notNull(),
+  },
+  (table) => [index("idx_food_reviews_spot").on(table.spotId)]
 );

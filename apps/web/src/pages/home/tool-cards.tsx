@@ -8,6 +8,7 @@ import { useDarkMode } from "@/hooks/use-dark-mode";
 import { CampusLoginSvg } from "./illustrations/campus-login-svg";
 import { ClassRecommendSvg } from "./illustrations/class-recommend-svg";
 import { CommentsSvg } from "./illustrations/comments-svg";
+import { FoodMapSvg } from "./illustrations/food-map-svg";
 import { LeaveSlipSvg } from "./illustrations/leave-slip-svg";
 import { LocationSvg } from "./illustrations/location-svg";
 import { NewsSvg } from "./illustrations/news-svg";
@@ -52,6 +53,12 @@ const tools: {
     description:
       "学习网页、Android 和 iOS 的模拟定位方法，另附学习通签到说明。",
     Illustration: LocationSvg,
+  },
+  {
+    href: "/tools/food-map",
+    title: "美食地图",
+    description: "三个校区的美食地点合集，打分评价、推荐菜和小红书/美团链接。",
+    Illustration: FoodMapSvg,
   },
   {
     href: "/pages/comment",

@@ -10,6 +10,7 @@ import type { ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 
 import { App } from "@/app";
+import { PageLoading } from "@/components/page-loading";
 import { HomePage } from "@/pages/home";
 
 import "@/styles/globals.css";
@@ -46,6 +47,13 @@ const CampusLoginPage = lazy(
   async () =>
     await import("@/pages/tools/campus-login").then((module) => ({
       default: module.CampusLoginPage,
+    }))
+);
+
+const FoodMapPage = lazy(
+  async () =>
+    await import("@/pages/tools/food-map").then((module) => ({
+      default: module.FoodMapPage,
     }))
 );
 
@@ -94,13 +102,7 @@ const NotFoundPage = lazy(
 const queryClient = new QueryClient();
 
 const LazyPage = ({ children }: { children: ReactNode }) => (
-  <Suspense
-    fallback={
-      <p className="text-muted-foreground px-6 py-16 text-sm">正在加载页面</p>
-    }
-  >
-    {children}
-  </Suspense>
+  <Suspense fallback={<PageLoading />}>{children}</Suspense>
 );
 
 const rootRoute = createRootRoute({
@@ -164,6 +166,16 @@ const campusLoginRoute = createRoute({
   component: () => (
     <LazyPage>
       <CampusLoginPage />
+    </LazyPage>
+  ),
+});
+
+const foodMapRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/tools/food-map",
+  component: () => (
+    <LazyPage>
+      <FoodMapPage />
     </LazyPage>
   ),
 });
@@ -256,6 +268,7 @@ const router = createRouter({
     leaveSlipRoute,
     newsRoute,
     campusLoginRoute,
+    foodMapRoute,
     joinUsRoute,
     privacyRoute,
     privacyHtmlRoute,

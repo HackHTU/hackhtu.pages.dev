@@ -90,6 +90,11 @@
     "zod": "^4.1.12",
     "@grammyjs/stream": "^1.1.0",
     "@grammyjs/auto-retry": "^2.0.2",
-    "@ai-sdk/provider": "^4.0.34"
+    "@ai-sdk/provider": "^4.0.34",
+    "leaflet": "^1.9.4",
+    "react-leaflet": "^5.0.0",
+    "@types/leaflet": "^1.9.22",
+    "supercluster": "^8.0.1",
+    "@types/supercluster": "^7.1.0"
   }
 }

@@ -29,6 +29,34 @@
       "when": 1793527479257,
       "tag": "0003_lethal_mac_gargan",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1793616222744,
+      "tag": "0004_bent_whistler",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1793616887542,
+      "tag": "0005_heavy_rawhide_kid",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1793616927693,
+      "tag": "0006_smart_thena",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1793617349197,
+      "tag": "0007_bright_silver_centurion",
+      "breakpoints": true
     }
   ]
 }

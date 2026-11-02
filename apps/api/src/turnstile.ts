@@ -2,6 +2,7 @@ import type { Context } from "hono";
 import { z } from "zod";
 
 import type { Bindings } from "./env";
+import { logError } from "./log";
 
 const VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
 
@@ -47,13 +48,13 @@ export const verifyTurnstile = async (
   const hostnames = configuredHostnames(c.env.TURNSTILE_HOSTNAMES);
 
   if (secret === undefined || secret === "") {
-    console.error("TURNSTILE_SECRET_KEY is not configured");
+    logError("TURNSTILE_SECRET_KEY is not configured");
 
     return { status: 503, error: "验证服务暂不可用" };
   }
 
   if (hostnames.size === 0) {
-    console.error("TURNSTILE_HOSTNAMES is not configured");
+    logError("TURNSTILE_HOSTNAMES is not configured");
 
     return { status: 503, error: "验证服务暂不可用" };
   }
@@ -81,7 +82,7 @@ export const verifyTurnstile = async (
 
     result = resultSchema.parse(await response.json());
   } catch (error) {
-    console.error("Turnstile verification failed", error);
+    logError("Turnstile verification failed", error);
 
     return { status: 503, error: "验证服务暂时不可用，请稍后重试" };
   }

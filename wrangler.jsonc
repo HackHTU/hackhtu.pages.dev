@@ -19,6 +19,7 @@
     "AI_REASONING": "low",
     "AI_CAPABILITIES": "text,image,audio",
     "STICKER_SET": "spv_3f97a3558a8c83338ff83621f0ab838b_by_stckrRobot",
+    // 生产日志级别；本地 dev 由 .dev.vars / .env 覆盖为 debug
     "LOG_LEVEL": "info",
     "TURNSTILE_HOSTNAMES": "localhost,127.0.0.1,hackhtu.pages.dev",
   },

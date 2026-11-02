@@ -3,6 +3,12 @@ import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 
 const updates = [
   {
+    date: "2026-11-02",
+    version: "2.2",
+    tag: "NEW",
+    body: "美食地图上线：可在地图上浏览同学推荐的美食地点，提交新地点并留下评分与评价。新增评论、地点和评价都会实时推送到 Telegram 群，通知包含完整内容。",
+  },
+  {
     date: "2026-11-01",
     version: "2.1",
     tag: "NEW",

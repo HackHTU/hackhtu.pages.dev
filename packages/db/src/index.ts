@@ -1,4 +1,10 @@
-export { classInfo, classReviews, siteComments } from "./schema";
+export {
+  classInfo,
+  classReviews,
+  foodReviews,
+  foodSpots,
+  siteComments,
+} from "./schema";
 
 export {
   aiContext,

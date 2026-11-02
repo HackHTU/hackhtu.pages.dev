@@ -1,6 +1,7 @@
 import type { ExecutionContext } from "hono";
 
 import type { Bindings } from "./env";
+import { logDebug, logError, logWarn } from "./log";
 
 const TELEGRAM_API = "https://api.telegram.org";
 const RICH_MESSAGE_LIMIT = 30_000;
@@ -24,6 +25,28 @@ export type WebNotifyEvent =
       className: string;
       attitude: number;
       comment: string | null;
+    }
+  | {
+      type: "food-spot";
+      name: string;
+      category: string;
+      description: string | null;
+      address: string | null;
+      linkUrl: string | null;
+      dishes: string[];
+      nickname: string;
+    }
+  | {
+      type: "food-review";
+      spotName: string;
+      rating: number;
+      taste: number | null;
+      portion: number | null;
+      environment: number | null;
+      body: string | null;
+      linkUrl: string | null;
+      dishes: string[];
+      nickname: string;
     };
 
 const ATTITUDE_LABELS = new Map<number, string>([
@@ -73,6 +96,7 @@ const orDash = (value: string | number | null | undefined): string => {
 const SITE_LINKS = {
   comments: "/pages/comment",
   classes: "/tools/class-recommend",
+  foodMap: "/tools/food-map",
 } as const;
 
 /**
@@ -109,6 +133,54 @@ const renderEvent = (event: WebNotifyEvent, origin: string): string => {
       `**学分 / 学时**：${orDash(event.credits)} / ${orDash(event.hours)}`,
       "",
       `[去课程推荐看看](${origin}${SITE_LINKS.classes})`,
+    ].join("\n\n");
+  }
+
+  if (event.type === "food-spot") {
+    const lines = [
+      `**名称**：${escapeMarkdown(event.name)}`,
+      `**分类**：${escapeMarkdown(event.category)}`,
+      `**地址**：${escapeMarkdown(orDash(event.address))}`,
+      // 简介可能带换行；单换行在 rich message 里会被折叠，压成空格保住段落结构。
+      `**简介**：${escapeMarkdown(orDash(event.description)).replaceAll(/\n+/gu, " ")}`,
+      `**推荐菜**：${event.dishes.length > 0 ? event.dishes.map(escapeMarkdown).join("、") : "-"}`,
+      `**链接**：${orDash(event.linkUrl)}`,
+      `**提交人**：${escapeMarkdown(event.nickname)}`,
+    ];
+
+    return [
+      "**🍜 美食地图新增地点** #美食地图",
+      "",
+      lines.join("\n"),
+      "",
+      `[去美食地图看看](${origin}${SITE_LINKS.foodMap})`,
+    ].join("\n\n");
+  }
+
+  if (event.type === "food-review") {
+    const scores = [
+      event.taste === null ? null : `口味 ${event.taste}`,
+      event.portion === null ? null : `分量 ${event.portion}`,
+      event.environment === null ? null : `环境 ${event.environment}`,
+    ].filter((score): score is string => score !== null);
+
+    const lines = [
+      `**地点**：${escapeMarkdown(event.spotName)}`,
+      `**评分**：${"★".repeat(event.rating)}${"☆".repeat(5 - event.rating)}`,
+      ...(scores.length > 0 ? [`**分项**：${scores.join(" / ")}`] : []),
+      // 评价正文可能带换行；单换行在 rich message 里会被折叠，压成空格保住段落结构。
+      `**评价**：${escapeMarkdown(orDash(event.body)).replaceAll(/\n+/gu, " ")}`,
+      `**推荐菜**：${event.dishes.length > 0 ? event.dishes.map(escapeMarkdown).join("、") : "-"}`,
+      `**链接**：${orDash(event.linkUrl)}`,
+      `**评价人**：${escapeMarkdown(event.nickname)}`,
+    ];
+
+    return [
+      "**⭐ 美食地图新增评价** #美食地图",
+      "",
+      lines.join("\n"),
+      "",
+      `[去美食地图看看](${origin}${SITE_LINKS.foodMap})`,
     ].join("\n\n");
   }
 
@@ -163,14 +235,11 @@ const sendToChat = async (
       return;
     }
 
-    console.error(
-      "Telegram rich notify rejected",
-      chat,
-      response.status,
-      await response.text()
+    logWarn(
+      `Telegram rich notify rejected (chat ${chat}, status ${response.status})`
     );
   } catch (error) {
-    console.error("Telegram rich notify failed", chat, error);
+    logError("Telegram rich notify failed", error);
   }
 
   try {
@@ -180,11 +249,8 @@ const sendToChat = async (
     });
 
     if (!response.ok) {
-      console.error(
-        "Telegram notify fallback rejected",
-        chat,
-        response.status,
-        await response.text()
+      logWarn(
+        `Telegram notify fallback rejected (chat ${chat}, status ${response.status})`
       );
     }
   } catch (error) {
@@ -211,10 +277,14 @@ export const notifyWebEvent = (
   const chats = parseChats(env.NOTIFY_CHATS);
 
   if (!isText(BOT_TOKEN) || chats.length === 0) {
+    logDebug("web notify skipped: BOT_TOKEN or NOTIFY_CHATS not configured");
+
     return;
   }
 
   const markdown = renderEvent(event, origin);
+
+  logDebug(`web notify: ${event.type}`);
 
   const task = (async (): Promise<void> => {
     for (const chat of chats) {
