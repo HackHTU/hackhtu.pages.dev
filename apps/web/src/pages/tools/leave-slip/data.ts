@@ -41,6 +41,23 @@ export const LOCAL_STORAGE_KEY = "leave-slip-local-data";
 export const SESSION_STORAGE_KEY = "leave-slip-session-data";
 export const TEMPLATE_STORAGE_KEY = "leave-slip-template";
 
+/** 截图预览的默认尺寸（px）。 */
+export const DEFAULT_PREVIEW_WIDTH = 420;
+export const DEFAULT_PREVIEW_HEIGHT = 800;
+
+/** 截图预览允许的最小/最大宽度与高度（px）。 */
+export const MIN_PREVIEW_WIDTH = 240;
+export const MAX_PREVIEW_WIDTH = 1280;
+export const MIN_PREVIEW_HEIGHT = 320;
+export const MAX_PREVIEW_HEIGHT = 3200;
+
+/** 把预览尺寸收敛到允许范围内。 */
+export const clampPreviewSize = (
+  value: number,
+  min: number,
+  max: number
+): number => Math.min(max, Math.max(min, value));
+
 const storedSessionSchema = z.looseObject({
   type: z.string().optional(),
   leaveCategory: z.string().optional(),

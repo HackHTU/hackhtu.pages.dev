@@ -5,10 +5,11 @@
 import {
   ArrowsOutIcon,
   DeviceMobileIcon,
+  FrameCornersIcon,
   ImageSquareIcon,
   PencilSimpleIcon,
 } from "@phosphor-icons/react";
-import type { Dispatch, RefObject, SetStateAction } from "react";
+import type { Dispatch, CSSProperties, RefObject, SetStateAction } from "react";
 import { useEffect, useRef, useState } from "react";
 import { createPortal, flushSync } from "react-dom";
 
@@ -16,25 +17,25 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 
 import { SlipPanel } from "./controls";
-import { isTemplateType, TEMPLATE_LABELS } from "./data";
+import {
+  clampPreviewSize,
+  DEFAULT_PREVIEW_HEIGHT,
+  DEFAULT_PREVIEW_WIDTH,
+  isTemplateType,
+  MAX_PREVIEW_HEIGHT,
+  MAX_PREVIEW_WIDTH,
+  MIN_PREVIEW_HEIGHT,
+  MIN_PREVIEW_WIDTH,
+  TEMPLATE_LABELS,
+} from "./data";
 import type { LocalData, SessionData, TemplateType } from "./data";
 import { FieldGuideMenu } from "./field-guide";
-import {
-  BrowserFrame,
-  DEFAULT_FRAME,
-  FRAME_BOTTOM_LABELS,
-  FRAME_STATUS_LABELS,
-  FRAME_TOP_LABELS,
-  frameExtraHeight,
-} from "./mobile/chrome";
-import type {
-  FrameBottom,
-  FrameOptions,
-  FrameTop,
-  StatusStyle,
-} from "./mobile/chrome";
+import { BrowserFrame, DEFAULT_FRAME, frameExtraHeight } from "./mobile/chrome";
+import type { FrameOptions } from "./mobile/chrome";
 import { MobileReplica } from "./mobile/mobile-replica";
 import { buildReplicaData } from "./mobile/shared";
+import { FrameOptionsControls } from "./preview-frame";
+import { PreviewSizeControls } from "./preview-size";
 
 export const PreviewPanel = ({
   localData,
@@ -69,11 +70,16 @@ export const PreviewPanel = ({
   const [editable, setEditable] = useState(false);
   const [frame, setFrame] = useState<FrameOptions>(DEFAULT_FRAME);
   const [chromeSeed, setChromeSeed] = useState(0);
+  const [previewWidth, setPreviewWidth] = useState(DEFAULT_PREVIEW_WIDTH);
+  const [previewHeight, setPreviewHeight] = useState(DEFAULT_PREVIEW_HEIGHT);
+  const [sizeOpen, setSizeOpen] = useState(false);
   const [previewScale, setPreviewScale] = useState(1);
   const viewportRef = useRef<HTMLDivElement>(null);
   const previousScroll = useRef(0);
   const data = buildReplicaData(localData, sessionData);
-  const previewHeight = 844 + (frame.enabled ? frameExtraHeight(frame) : 0);
+
+  const previewTotalHeight =
+    previewHeight + (frame.enabled ? frameExtraHeight(frame) : 0);
 
   useEffect(() => {
     if (isFullscreen) {
@@ -92,7 +98,9 @@ export const PreviewPanel = ({
     }
 
     const update = () => {
-      setPreviewScale(Math.min(1, (element.clientWidth - 32) / 390));
+      setPreviewScale(
+        Math.min(1, (element.clientWidth - 32) / Math.max(previewWidth, 1))
+      );
     };
 
     update();
@@ -102,7 +110,7 @@ export const PreviewPanel = ({
     return () => {
       observer.disconnect();
     };
-  }, [isFullscreen]);
+  }, [isFullscreen, previewWidth]);
 
   useEffect(() => {
     if (!isFullscreen) {
@@ -143,6 +151,28 @@ export const PreviewPanel = ({
     setCapturedImage(null);
   };
 
+  const changePreviewWidth = (width: number) => {
+    setPreviewWidth(
+      clampPreviewSize(width, MIN_PREVIEW_WIDTH, MAX_PREVIEW_WIDTH)
+    );
+
+    setCapturedImage(null);
+  };
+
+  const changePreviewHeight = (height: number) => {
+    setPreviewHeight(
+      clampPreviewSize(height, MIN_PREVIEW_HEIGHT, MAX_PREVIEW_HEIGHT)
+    );
+
+    setCapturedImage(null);
+  };
+
+  const resetPreviewSize = () => {
+    setPreviewWidth(DEFAULT_PREVIEW_WIDTH);
+    setPreviewHeight(DEFAULT_PREVIEW_HEIGHT);
+    setCapturedImage(null);
+  };
+
   const renderReplica = (
     onExit?: () => void,
     fullWidth = false,
@@ -162,10 +192,21 @@ export const PreviewPanel = ({
       />
     );
 
+    // 预览尺寸经 CSS 变量传入复刻页；全屏保持自然铺满，不套用自定义尺寸。
+    const previewVars:
+      | (CSSProperties & Record<"--htu-width" | "--htu-height", string>)
+      | undefined = fullWidth
+      ? undefined
+      : {
+          "--htu-width": `${previewWidth}px`,
+          "--htu-height": `${previewHeight}px`,
+        };
+
     return (
       <div
         ref={previewRef}
         lang=""
+        style={previewVars}
         className={`light htu-mobile${fullWidth ? " htu-mobile-full" : ""}`}
       >
         {framed ? (
@@ -195,7 +236,7 @@ export const PreviewPanel = ({
       id="export"
       icon={<ImageSquareIcon size={22} weight="duotone" />}
       title="预览与导出"
-      summary="选择页面，点击画面里的按钮可以切换出示假条、请假条和审批流程。开启直接编辑后，可以直接点击假条和详情里的文字修改；开启带壳截图可以给截图加上状态栏和底部导航栏；全屏时点击左上角返回退出。"
+      summary="选择页面，点击画面里的按钮可以切换出示假条、请假条和审批流程。开启直接编辑后，可以直接点击假条和详情里的文字修改；开启带壳截图可以给截图加上状态栏和底部导航栏；点「调整大小」展开宽高拉杆，调整后只影响预览和截图；全屏时点击左上角返回退出。"
       defaultOpen
     >
       <div className="flex flex-col gap-4">
@@ -222,7 +263,7 @@ export const PreviewPanel = ({
           </select>
         </div>
 
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           <Button
             type="button"
             className="w-full whitespace-nowrap"
@@ -257,92 +298,37 @@ export const PreviewPanel = ({
             <DeviceMobileIcon size={18} />
             {frame.enabled ? "带壳中" : "带壳截图"}
           </Button>
+          <Button
+            type="button"
+            className="w-full whitespace-nowrap"
+            variant={sizeOpen ? "default" : "outline"}
+            onClick={() => {
+              setSizeOpen((value) => !value);
+            }}
+          >
+            <FrameCornersIcon size={18} />
+            调整大小
+          </Button>
         </div>
 
         {frame.enabled ? (
-          <div className="border-border bg-muted/30 grid gap-2 rounded-xl border p-3">
-            <div className="grid grid-cols-[64px_1fr] items-center gap-2">
-              <Label htmlFor="frame-top">顶部</Label>
-              <select
-                id="frame-top"
-                value={frame.top}
-                onChange={(e) => {
-                  const { value } = e.target;
+          <FrameOptionsControls
+            frame={frame}
+            onChange={(patch) => {
+              setFrame((current) => ({ ...current, ...patch }));
+              setCapturedImage(null);
+            }}
+          />
+        ) : null}
 
-                  if (value === "status" || value === "browser") {
-                    setFrame((current: FrameOptions) => ({
-                      ...current,
-                      top: value satisfies FrameTop,
-                    }));
-                    setCapturedImage(null);
-                  }
-                }}
-                className="border-input bg-background focus-visible:ring-ring flex h-9 w-full rounded-lg border px-2 text-sm outline-none focus-visible:ring-2"
-              >
-                {Object.entries(FRAME_TOP_LABELS).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="grid grid-cols-[64px_1fr] items-center gap-2">
-              <Label htmlFor="frame-status">状态栏</Label>
-              <select
-                id="frame-status"
-                value={frame.statusStyle}
-                onChange={(e) => {
-                  const { value } = e.target;
-
-                  if (value === "ios" || value === "android") {
-                    setFrame((current: FrameOptions) => ({
-                      ...current,
-                      statusStyle: value satisfies StatusStyle,
-                    }));
-                    setCapturedImage(null);
-                  }
-                }}
-                className="border-input bg-background focus-visible:ring-ring flex h-9 w-full rounded-lg border px-2 text-sm outline-none focus-visible:ring-2"
-              >
-                {Object.entries(FRAME_STATUS_LABELS).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="grid grid-cols-[64px_1fr] items-center gap-2">
-              <Label htmlFor="frame-bottom">底部</Label>
-              <select
-                id="frame-bottom"
-                value={frame.bottom}
-                onChange={(e) => {
-                  const { value } = e.target;
-
-                  if (
-                    value === "none" ||
-                    value === "dots" ||
-                    value === "keys" ||
-                    value === "browser" ||
-                    value === "gesture"
-                  ) {
-                    setFrame((current: FrameOptions) => ({
-                      ...current,
-                      bottom: value satisfies FrameBottom,
-                    }));
-                    setCapturedImage(null);
-                  }
-                }}
-                className="border-input bg-background focus-visible:ring-ring flex h-9 w-full rounded-lg border px-2 text-sm outline-none focus-visible:ring-2"
-              >
-                {Object.entries(FRAME_BOTTOM_LABELS).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
+        {sizeOpen ? (
+          <PreviewSizeControls
+            height={previewHeight}
+            width={previewWidth}
+            onHeightChange={changePreviewHeight}
+            onReset={resetPreviewSize}
+            onWidthChange={changePreviewWidth}
+          />
         ) : null}
       </div>
 
@@ -354,13 +340,13 @@ export const PreviewPanel = ({
           <div
             className="overflow-hidden"
             style={{
-              width: 390 * previewScale,
-              height: previewHeight * previewScale,
+              width: previewWidth * previewScale,
+              height: previewTotalHeight * previewScale,
             }}
           >
             <div
               style={{
-                width: 390,
+                width: previewWidth,
                 transform: `scale(${previewScale})`,
                 transformOrigin: "top left",
               }}
