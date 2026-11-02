@@ -130,7 +130,7 @@ export const FIELD_COPY: Record<
   },
   leaveRange: {
     title: "离校范围",
-    description: "假条中间红色的离校类型文字。",
+    description: "假条中间的离校类型文字（不离校为绿色，离校为红色）。",
   },
   category: {
     title: "请假类型",

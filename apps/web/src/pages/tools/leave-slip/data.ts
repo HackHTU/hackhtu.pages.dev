@@ -105,7 +105,7 @@ export interface LocalData {
 }
 
 export interface SessionData {
-  type: "离校不出市" | "离校";
+  type: "不离校" | "离校不出市" | "离校";
   leaveCategory: LeaveCategory;
   leaveSubtype: string;
   leaveCampus: "离校" | "不离校";
@@ -125,7 +125,16 @@ export const isMale = (value: string): value is LocalData["male"] =>
   value === "男" || value === "女";
 
 export const isLeaveType = (value: string): value is SessionData["type"] =>
-  value === "离校" || value === "离校不出市";
+  value === "不离校" || value === "离校" || value === "离校不出市";
+
+/** 归一化存储里的离校范围；旧数据没有「不离校」，非法值回落到「离校不出市」。 */
+const normalizeLeaveType = (value: string | undefined): SessionData["type"] => {
+  if (value === "不离校" || value === "离校") {
+    return value;
+  }
+
+  return "离校不出市";
+};
 
 export const TEMPLATE_LABELS = {
   pass: "出示假条",
@@ -228,17 +237,17 @@ export const loadSession = (): SessionData => {
     if (raw !== null) {
       const parsed = storedSessionSchema.parse(JSON.parse(raw));
       const leaveCategory = parsed.leaveCategory === "病假" ? "病假" : "事假";
-      const { leaveCity: storedCity } = parsed;
+      const { leaveCity: storedCity, type: storedType } = parsed;
       let leaveCity: "是" | "否";
 
       if (storedCity === "是" || storedCity === "否") {
         leaveCity = storedCity;
       } else {
-        leaveCity = parsed.type === "离校" ? "是" : "否";
+        leaveCity = storedType === "离校" ? "是" : "否";
       }
 
       return {
-        type: parsed.type === "离校" ? "离校" : "离校不出市",
+        type: normalizeLeaveType(storedType),
         leaveCategory,
         leaveSubtype: normalizeLeaveSubtype(
           leaveCategory,

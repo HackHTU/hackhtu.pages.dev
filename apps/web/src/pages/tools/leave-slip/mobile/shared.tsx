@@ -62,11 +62,11 @@ export const formatSecond = (value: string, seconds: string): string =>
   value === "" ? "" : `${formatMinute(value)}:${seconds}`;
 
 const fallbackAvatar = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(
-  '<svg xmlns="http://www.w3.org/2000/svg" width="231" height="154" viewBox="0 0 231 154"><rect width="231" height="154" fill="#eef1f5"/><g fill="#b9c3ce"><circle cx="115" cy="58" r="22"/><path d="M115 88c-27 0-49 16-55 38h110c-6-22-28-38-55-38z"/></g></svg>'
+  '<svg xmlns="http://www.w3.org/2000/svg" width="231" height="323" viewBox="0 0 231 323"><rect width="231" height="323" fill="#eef1f5"/><g fill="#b9c3ce"><circle cx="115" cy="113" r="38"/><path d="M115 170c-42 0-76 25-85 60h170c-9-35-43-60-85-60z"/></g></svg>'
 )}`;
 
 const isLeaveType = (value: string) =>
-  value === "离校不出市" || value === "离校";
+  value === "不离校" || value === "离校不出市" || value === "离校";
 
 /**
  * 把站内表单数据映射到复刻页面。留空的字段使用示例值，

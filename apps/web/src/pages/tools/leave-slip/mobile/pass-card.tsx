@@ -162,7 +162,7 @@ export const PassCardScreen = ({
                 ) : (
                   <img className="htu-qr-image" src={qrSrc} alt="核验码" />
                 )}
-                <div className="htu-qr-caption">扫码查看核验信息</div>
+                <div className="htu-qr-caption">只能使用专用核验工具扫码</div>
               </div>
             </div>
           ) : null}
@@ -320,13 +320,26 @@ export const PassCardScreen = ({
                   </tbody>
                 </table>
 
-                <div className="htu-pass-type">
+                <div
+                  className={`htu-pass-type${
+                    (editable ? sessionData.type : data.type) === "不离校"
+                      ? " is-no-leave"
+                      : ""
+                  }`}
+                >
                   <InlineChoice
-                    allowed={["离校不出市", "离校"]}
+                    allowed={["不离校", "离校不出市", "离校"]}
                     editable={editable}
                     onChange={(value) => {
+                      const next =
+                        value === "不离校" || value === "离校"
+                          ? value
+                          : "离校不出市";
+
                       onSessionChange({
-                        type: value === "离校" ? "离校" : "离校不出市",
+                        type: next,
+                        leaveCampus: next === "不离校" ? "不离校" : "离校",
+                        leaveCity: next === "离校" ? "是" : "否",
                       });
                     }}
                     value={editable ? sessionData.type : data.type}

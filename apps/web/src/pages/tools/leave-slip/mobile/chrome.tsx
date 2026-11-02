@@ -211,7 +211,15 @@ const StatusBar = ({
 const BrowserBar = () => (
   <div className="htu-browserbar">
     <span className="htu-browserbar-close" aria-hidden>
-      ✕
+      <svg aria-hidden height="20" viewBox="0 0 24 24" width="20">
+        <path
+          d="M4 4 20 20M20 4 4 20"
+          fill="none"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeWidth="1.5"
+        />
+      </svg>
     </span>
     <span className="htu-browserbar-title">
       <b>河南师大智慧学工用户中心</b>

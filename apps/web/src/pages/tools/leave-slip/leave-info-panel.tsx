@@ -111,12 +111,14 @@ export const LeaveInfoPanel = ({
             if (isLeaveType(value)) {
               setSession({
                 type: value,
+                leaveCampus: value === "不离校" ? "不离校" : "离校",
                 leaveCity: value === "离校" ? "是" : "否",
               });
             }
           }}
           className="border-input bg-background focus-visible:ring-ring flex h-10 w-full rounded-lg border px-3 py-2 text-sm outline-none focus-visible:ring-2"
         >
+          <option value="不离校">不离校</option>
           <option value="离校不出市">离校不出市</option>
           <option value="离校">离校</option>
         </select>

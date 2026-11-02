@@ -168,7 +168,7 @@
   height: 50px;
   overflow: hidden;
   background: linear-gradient(135deg, #00b4c9 5%, #3b6cfe 100%);
-  box-shadow: 0 1px 4px rgba(10, 60, 120, 0.18);
+  box-shadow: none;
 }
 
 .htu-header-left {
@@ -212,7 +212,7 @@
   display: inline-block;
   color: #fff;
   font-size: 18px;
-  font-weight: 600;
+  font-weight: 400;
   line-height: 50px;
   vertical-align: middle;
   white-space: nowrap;
@@ -313,11 +313,18 @@
 /* ------------------------------ 出示假条 ------------------------------ */
 
 .htu-pass-content {
-  padding: 5px;
+  padding: 0 15px;
 }
 
+/* 卡片外观对齐源站 `.card`：10px 圆角、纯白底、强投影。
+   margin-top 10px 是源站 60px 卡片外边距减去 50px 顶栏后的视觉间距。 */
 .htu-pass-card {
   position: relative;
+  margin-top: 10px;
+  border-radius: 10px;
+  background-color: #fff;
+  box-shadow: 0 5px 15px 0 rgba(0, 0, 0, 0.25);
+  color: #343a40;
 }
 
 .htu-pass-title {
@@ -330,10 +337,10 @@
 }
 
 .htu-pass-dept {
-  margin: 10px 0 0;
-  color: #ff5e62;
-  font-size: 12px;
-  line-height: 18px;
+  margin: 0 0 14px;
+  color: #ff0000;
+  font-size: 14px;
+  line-height: 21px;
   text-align: center;
 }
 
@@ -394,10 +401,13 @@
 
 .htu-pass-avatar {
   display: block;
-  width: 165px;
+  width: 170px;
   max-width: 100%;
-  height: 110px;
-  margin: 0;
+  height: auto;
+  /* 源站示例照片 549×767，img-fluid 按原比例缩放到 170×237.5。 */
+  aspect-ratio: 549 / 767;
+  /* 源站图片带 bootstrap `.figure-img` 的 7px 下外边距。 */
+  margin: 0 0 7px;
   border-radius: 3.5px;
   object-fit: cover;
 }
@@ -418,7 +428,7 @@
 
 .htu-pass-meta {
   margin: 0 0 10px;
-  color: #7b8a9c;
+  color: #7a8392;
   font-size: 14px;
   font-weight: 400;
   line-height: 16.8px;
@@ -427,7 +437,7 @@
 
 .htu-pass-label {
   margin: 0 0 7px;
-  color: #7b8a9c;
+  color: #7a8392;
   font-size: 14px;
   line-height: 16.8px;
 }
@@ -450,14 +460,17 @@
   text-align: center;
 }
 
+/* 两侧「起/至」列固定，中间的时间列吃掉剩余宽度：
+   卡片够宽时 `2026-10-29 14:00` 一行放得下就不换行，不够时只在日期与时间之间的空格换行。 */
 .htu-time-table th {
+  width: 67.5px;
   color: #666;
   font-weight: 400;
   text-align: right;
 }
 
 .htu-time-table td {
-  width: 220px;
+  width: auto;
 }
 
 .htu-time-value {
@@ -467,7 +480,9 @@
   font-weight: 300;
   line-height: 29.4px;
   text-align: center;
-  white-space: nowrap;
+  /* 全局 `p { text-wrap: pretty }` 会为了两行均衡在连字符处断成
+     `2026-10-/29 14:00`；改回默认贪心断行，只在日期与时间之间的空格换行。 */
+  text-wrap: wrap;
 }
 
 .htu-invisible {
@@ -481,6 +496,11 @@
   font-weight: 400;
   line-height: 36px;
   text-align: center;
+}
+
+/* 源站用 text-success 显示「不离校」，其余离校类型为红色。 */
+.htu-pass-type.is-no-leave {
+  color: #56ab2f;
 }
 
 .htu-pass-approval {
@@ -528,7 +548,8 @@
   text-align: center;
   white-space: pre-line;
   transform: translate(-50%, -50%);
-  animation: htu-watermark-flow 6s linear infinite alternate;
+  /* 源站是 setInterval 每 1 秒把 top 挪 1%（56%↔76%），这里用 steps 还原离散跳变。 */
+  animation: htu-watermark-flow 20s steps(20, end) infinite alternate;
   pointer-events: none;
 }
 
@@ -543,10 +564,10 @@
 
 @keyframes htu-watermark-flow {
   from {
-    top: 57%;
+    top: 56%;
   }
   to {
-    top: 75%;
+    top: 76%;
   }
 }
 
@@ -558,7 +579,7 @@
 .htu-pass-back > a {
   display: inline;
   padding: 10px;
-  color: #0a5fc4;
+  color: #007bff;
   font-size: 14px;
   line-height: 21px;
   text-decoration: underline;
@@ -1537,8 +1558,11 @@ body.htu-fullscreen-open > #root {
 .htu-avatar-button {
   position: relative;
   display: block;
-  width: 165px;
-  height: 110px;
+  width: 170px;
+  max-width: 100%;
+  height: auto;
+  aspect-ratio: 549 / 767;
+  margin: 0 0 7px;
   padding: 0;
   overflow: hidden;
   border: 0;
@@ -1627,9 +1651,9 @@ body.htu-fullscreen-open > #root {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  color: #5f6368;
-  font-size: 16px;
+  width: 32px;
+  /* 关闭×用 SVG 画，便于单独控制「臂长」和「线宽」——文字字符做不到更细。 */
+  color: #000;
   line-height: 1;
 }
 
@@ -1648,7 +1672,7 @@ body.htu-fullscreen-open > #root {
   max-width: 100%;
   overflow: hidden;
   color: #202124;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 500;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1662,11 +1686,11 @@ body.htu-fullscreen-open > #root {
 
 .htu-browserbar-menu {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
   justify-content: center;
   gap: 3px;
-  width: 28px;
+  width: 32px;
   height: 28px;
 }
 
@@ -1674,7 +1698,7 @@ body.htu-fullscreen-open > #root {
   width: 3.5px;
   height: 3.5px;
   border-radius: 50%;
-  background: #5f6368;
+  background: #000;
 }
 
 .htu-frame-screen {
