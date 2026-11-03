@@ -169,9 +169,11 @@ const handleGroupMessage = async (
     return;
   }
 
-  // 资料检查只针对发送者本人，且不能阻塞后续命令/AI 处理。
+  // 资料检查只针对发送者本人；头像为空时会先删消息再提醒，之后不再处理这条消息。
   try {
-    await guardSenderProfile(bot, db, msg);
+    if (await guardSenderProfile(bot, db, msg)) {
+      return;
+    }
   } catch (error) {
     logWarn("profile.guard.failed", { chatId: msg.chat.id }, error);
   }
