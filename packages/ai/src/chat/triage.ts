@@ -39,24 +39,30 @@ const REPLY_INSTRUCTIONS = [
 
 /**
  * 违规判定：广告、R18 都允许，只有违反法律法规和刷屏才处置。
- * 刷屏要结合上下文看（候选消息和上文是否大量重复），所以必须带着历史一起判。
+ *
+ * 用一个 choice 问题把「真实违规 / 玩梗 / 提醒曝光 / 正常」放在一起比较，
+ * 比单纯问「是否违规」更不容易被字面敏感词带偏。
  */
-const VIOLATION_INSTRUCTIONS = [
+const MODERATION_INSTRUCTIONS = [
   STATE_INSTRUCTIONS,
-  "同时判断两件事，最后只输出一个结论：",
-  "1. 候选消息的正文内容是否违规；",
-  "2. 消息行头里的昵称或用户名是否违规。",
-  "只要正文或名称任意一项违规，就判定为违规；两者都正常才算不违规。",
-  "违规范围：博彩赌博、病毒/木马/钓鱼链接、诈骗（刷单返利、假冒客服、杀猪盘）、",
-  "买卖毒品/枪支/个人信息、招嫖、涉及未成年人的色情内容、恐怖主义和极端主义宣传。",
-  "昵称/用户名涉及上述严重违规（包括冒充本群或学校官方、恶意广告引流）同样算违规。",
-  "普通脏话、玩梗、R18 暗示、emoji、正常姓名（中英文都算）不算违规。",
-  "结合上下文看是在刷屏的（短时间内重复发送相同或无意义内容刷存在感）也算违规。",
-  "正常的广告推销、骂人、拉群引流、成人向（R18）色情内容、玩梗斗图都不算违规，群规允许这些内容。",
-].join("");
+  "先看候选消息的正文，再看消息行头里的昵称/用户名，从下面的分类里选一个最贴切的。",
+  "只按候选消息本身判断，不要被历史消息带偏。",
+].join("\n");
 
-/** 违规判定的阈值单独设高一点：误罚普通群友的代价比漏掉一条违规消息大。 */
-const VIOLATION_THRESHOLD = 0.8;
+const MODERATION_CRITERIA = {
+  violation: [
+    "真实、可操作的违法内容：博彩赌博、病毒/钓鱼链接、诈骗（刷单返利、假客服、杀猪盘）、",
+    "毒品/枪支/个人信息交易、招嫖、涉及未成年人的色情内容、恐怖主义和极端主义宣传；",
+    "给出真实参与渠道（联系方式、链接、收款码、账号、平台名），或给出具体可执行的犯罪/诈骗方法；",
+    "昵称/用户名冒充本群或学校官方、做恶意广告引流；",
+    "结合上下文看明显在短时间内重复刷屏。",
+  ].join(""),
+  joke: "反讽、夸张、自嘲、诉苦、情绪发泄、网络段子、顺口溜；包括「没钱就去偷」「去抢」这类夸张鼓动，以及赌博输钱、借钱翻本之类的吐槽；只要没有真实渠道和具体做法，都按玩梗处理。",
+  warning:
+    "提醒、曝光、劝阻别人不要上当；例如「大家小心」「别上当」「看新闻说」。",
+  normal:
+    "正常聊天、提问、广告、出二手、拉群引流、普通脏话、R18 暗示、emoji、正常姓名、玩梗斗图。",
+} satisfies Record<string, string>;
 
 export interface TriageResult {
   reply: boolean;
@@ -99,9 +105,10 @@ export const triageMessage = async (
         type: "boolean",
         instructions: REPLY_INSTRUCTIONS,
       },
-      violation: {
-        type: "boolean",
-        instructions: VIOLATION_INSTRUCTIONS,
+      moderation: {
+        type: "choice",
+        instructions: MODERATION_INSTRUCTIONS,
+        criteria: MODERATION_CRITERIA,
       },
     },
     abortSignal: AbortSignal.timeout(8000),
@@ -109,6 +116,6 @@ export const triageMessage = async (
 
   return {
     reply: result.answers.reply.probability >= config.aiTriageThreshold,
-    violation: result.answers.violation.probability >= VIOLATION_THRESHOLD,
+    violation: result.answers.moderation.choice === "violation",
   };
 };

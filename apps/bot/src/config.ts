@@ -134,7 +134,7 @@ export const getConfig = (env: Bindings): BotConfig => {
     verifyTimeoutMs: parseNumber(env.VERIFY_TIMEOUT_SECONDS, 120) * 1000,
     aiContextTokenLimit: parseNumber(env.AI_CONTEXT_TOKEN_LIMIT, 8000),
     aiModel: env.AI_MODEL ?? "@cf/qwen/qwen3.8-27b",
-    aiTriageModel: env.AI_TRIAGE_MODEL ?? "@cf/cloudflare/clef-flash",
+    aiTriageModel: env.AI_TRIAGE_MODEL ?? "@cf/cloudflare/clef-omni",
     aiTriageThreshold: parseNumber(env.AI_TRIAGE_THRESHOLD, 0.5),
     aiMemoryLimit: parseNumber(env.AI_MEMORY_LIMIT, 4000),
     aiReasoning: hasText(env.AI_REASONING) ? env.AI_REASONING : "low",

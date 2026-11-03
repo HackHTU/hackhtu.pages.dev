@@ -165,9 +165,9 @@ bot 源码在 `apps/bot`，通过 `functions/bot/[[route]].ts` 挂到同一个 P
 <summary><b>AI 聊天：模型、判定与输出协议</b></summary>
 
 - 主模型 `@cf/qwen/qwen3.8-27b`，用 Vercel AI SDK（`ai`）+ `workers-ai-provider` 直接走 `AI` 绑定，不依赖 Workers 专属的 `agents`。
-- 私聊、@机器人、回复机器人直接回复，不再看关键词；其余群消息用 `@cf/cloudflare/clef-flash`（AI SDK `experimental_decide` + decision model 适配器）一次判断两件事：
+- 私聊、@机器人、回复机器人直接回复，不再看关键词；其余群消息用 `@cf/cloudflare/clef-omni`（AI SDK `experimental_decide` + decision model 适配器）一次判断两件事：
   - 要不要让奶龙插话（instruction 里带人设，能认出语音转写的同音字写法）；
-  - 是否违规（博彩、病毒/钓鱼、诈骗、刷屏等；广告和 R18 允许，只处置违反法律法规的内容）。违规判定同时看消息正文（含引用内容和 via inline 机器人的消息）和发送者的昵称/用户名，任一违规即返回同一个 `violation` 结果。
+  - 是否违规（博彩、病毒/钓鱼、诈骗、刷屏等；广告和 R18 允许）。用 `choice` 在「真实违规 / 玩梗 / 提醒曝光 / 正常」里选一个，只有「真实违规」才处置；反讽、夸张段子、黑色幽默和「大家小心」这类提醒不会被当成广告或违规。判定同时看消息正文（含引用内容和 via inline 机器人的消息）和发送者的昵称/用户名。
 - decision 的 state 是消息数组：历史每条消息一个 part，最后一条带「候选消息」标记的才是判断对象，结合上下文但只判这一条。
 - 违规走三次警告制：前两次删除消息并警告，第 3 次起封禁；通知里用 spoiler 引用原消息内容，并挂「解除警告 / 解除封禁」按钮（仅管理员可用）。
 - 前提是群在白名单里、发送者是真人；私聊只对白名单群成员开放 AI。

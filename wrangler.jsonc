@@ -13,7 +13,7 @@
     "VERIFY_TIMEOUT_SECONDS": "120",
     "AI_CONTEXT_TOKEN_LIMIT": "8000",
     "AI_MODEL": "@cf/qwen/qwen3.8-27b",
-    "AI_TRIAGE_MODEL": "@cf/cloudflare/clef-flash",
+    "AI_TRIAGE_MODEL": "@cf/cloudflare/clef-omni",
     "AI_TRIAGE_THRESHOLD": "0.5",
     "AI_MEMORY_LIMIT": "4000",
     "AI_REASONING": "low",
