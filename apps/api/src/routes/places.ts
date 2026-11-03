@@ -1,10 +1,10 @@
 import {
-  createFoodSpotBodySchema,
-  foodIdParamSchema,
-  foodReviewBodySchema,
-  foodSpotsQuerySchema,
+  createPlaceBodySchema,
+  placeIdParamSchema,
+  placeReviewBodySchema,
+  placesQuerySchema,
 } from "@hackhtu/contracts";
-import { createDb, foodReviews, foodSpots } from "@hackhtu/db";
+import { createDb, placeReviews, places } from "@hackhtu/db";
 import { zValidator } from "@hono/zod-validator";
 import { and, avg, between, count, desc, eq, like, or } from "drizzle-orm";
 import { Hono } from "hono";
@@ -42,7 +42,7 @@ const toAverage = (value: string | number | null): number | null => {
 };
 
 const formatSpot = (
-  row: typeof foodSpots.$inferSelect,
+  row: typeof places.$inferSelect,
   reviewCount: number,
   averageRating: string | number | null
 ) => ({
@@ -52,8 +52,8 @@ const formatSpot = (
   averageRating: toAverage(averageRating),
 });
 
-export const foodRoutes = new Hono<{ Bindings: Bindings }>()
-  .get("/spots", zValidator("query", foodSpotsQuerySchema), async (c) => {
+export const placeRoutes = new Hono<{ Bindings: Bindings }>()
+  .get("/spots", zValidator("query", placesQuerySchema), async (c) => {
     const query = c.req.valid("query");
     const db = createDb(c.env.DB);
 
@@ -61,7 +61,7 @@ export const foodRoutes = new Hono<{ Bindings: Bindings }>()
     const filters = [];
 
     if (query.category !== undefined) {
-      filters.push(eq(foodSpots.category, query.category));
+      filters.push(eq(places.category, query.category));
     }
 
     // 只加载当前视野内的地点；经纬度都在范围内才算可见。
@@ -72,8 +72,8 @@ export const foodRoutes = new Hono<{ Bindings: Bindings }>()
       query.maxLng !== undefined
     ) {
       filters.push(
-        between(foodSpots.latitude, query.minLat, query.maxLat),
-        between(foodSpots.longitude, query.minLng, query.maxLng)
+        between(places.latitude, query.minLat, query.maxLat),
+        between(places.longitude, query.minLng, query.maxLng)
       );
     }
 
@@ -81,10 +81,10 @@ export const foodRoutes = new Hono<{ Bindings: Bindings }>()
       const pattern = `%${query.q}%`;
 
       const queryFilter = or(
-        like(foodSpots.name, pattern),
-        like(foodSpots.description, pattern),
-        like(foodSpots.category, pattern),
-        like(foodSpots.address, pattern)
+        like(places.name, pattern),
+        like(places.description, pattern),
+        like(places.category, pattern),
+        like(places.address, pattern)
       );
 
       if (queryFilter !== undefined) {
@@ -97,19 +97,19 @@ export const foodRoutes = new Hono<{ Bindings: Bindings }>()
     const [rows, summaries] = await Promise.all([
       db
         .select()
-        .from(foodSpots)
+        .from(places)
         .where(where)
-        .orderBy(desc(foodSpots.id))
+        .orderBy(desc(places.id))
         .limit(query.pageSize)
         .offset((query.page - 1) * query.pageSize),
       db
         .select({
-          spotId: foodReviews.spotId,
+          spotId: placeReviews.spotId,
           reviewCount: count(),
-          averageRating: avg(foodReviews.rating),
+          averageRating: avg(placeReviews.rating),
         })
-        .from(foodReviews)
-        .groupBy(foodReviews.spotId),
+        .from(placeReviews)
+        .groupBy(placeReviews.spotId),
     ]);
 
     const bySpot = new Map(
@@ -118,7 +118,7 @@ export const foodRoutes = new Hono<{ Bindings: Bindings }>()
 
     const [totalRows] = await db
       .select({ total: count() })
-      .from(foodSpots)
+      .from(places)
       .where(where);
 
     const total = totalRows?.total ?? 0;
@@ -142,18 +142,18 @@ export const foodRoutes = new Hono<{ Bindings: Bindings }>()
       200
     );
   })
-  .post("/spots", zValidator("json", createFoodSpotBodySchema), async (c) => {
+  .post("/spots", zValidator("json", createPlaceBodySchema), async (c) => {
     const body = c.req.valid("json");
 
     if (body.website !== undefined && body.website.length > 0) {
       return c.json({ error: "提交失败" }, 400);
     }
 
-    if (await hitWriteLimit(c, "food-spot")) {
+    if (await hitWriteLimit(c, "place-spot")) {
       return c.json({ error: "操作太频繁，请稍后再试" }, 429);
     }
 
-    const failure = await verifyTurnstile(c, body.turnstileToken, "food-spot");
+    const failure = await verifyTurnstile(c, body.turnstileToken, "place-spot");
 
     if (failure !== null) {
       return c.json({ error: failure.error }, failure.status);
@@ -162,7 +162,7 @@ export const foodRoutes = new Hono<{ Bindings: Bindings }>()
     const db = createDb(c.env.DB);
 
     const [row] = await db
-      .insert(foodSpots)
+      .insert(places)
       .values({
         name: body.name,
         category: body.category,
@@ -178,7 +178,7 @@ export const foodRoutes = new Hono<{ Bindings: Bindings }>()
       .returning();
 
     notifyWebEvent(c.executionCtx, c.env, new URL(c.req.url).origin, {
-      type: "food-spot",
+      type: "place-spot",
       name: row.name,
       category: row.category,
       description: row.description,
@@ -190,14 +190,14 @@ export const foodRoutes = new Hono<{ Bindings: Bindings }>()
 
     return c.json(formatSpot(row, 0, null), 201);
   })
-  .get("/spots/:id", zValidator("param", foodIdParamSchema), async (c) => {
+  .get("/spots/:id", zValidator("param", placeIdParamSchema), async (c) => {
     const { id } = c.req.valid("param");
     const db = createDb(c.env.DB);
 
     const [row] = await db
       .select()
-      .from(foodSpots)
-      .where(eq(foodSpots.id, id))
+      .from(places)
+      .where(eq(places.id, id))
       .limit(1);
 
     if (row === undefined) {
@@ -207,10 +207,10 @@ export const foodRoutes = new Hono<{ Bindings: Bindings }>()
     const [summary] = await db
       .select({
         reviewCount: count(),
-        averageRating: avg(foodReviews.rating),
+        averageRating: avg(placeReviews.rating),
       })
-      .from(foodReviews)
-      .where(eq(foodReviews.spotId, id));
+      .from(placeReviews)
+      .where(eq(placeReviews.spotId, id));
 
     return c.json(
       formatSpot(
@@ -223,15 +223,15 @@ export const foodRoutes = new Hono<{ Bindings: Bindings }>()
   })
   .get(
     "/spots/:id/reviews",
-    zValidator("param", foodIdParamSchema),
+    zValidator("param", placeIdParamSchema),
     async (c) => {
       const { id } = c.req.valid("param");
       const db = createDb(c.env.DB);
 
       const [spot] = await db
-        .select({ id: foodSpots.id })
-        .from(foodSpots)
-        .where(eq(foodSpots.id, id))
+        .select({ id: places.id })
+        .from(places)
+        .where(eq(places.id, id))
         .limit(1);
 
       if (spot === undefined) {
@@ -240,9 +240,9 @@ export const foodRoutes = new Hono<{ Bindings: Bindings }>()
 
       const rows = await db
         .select()
-        .from(foodReviews)
-        .where(eq(foodReviews.spotId, id))
-        .orderBy(desc(foodReviews.id))
+        .from(placeReviews)
+        .where(eq(placeReviews.spotId, id))
+        .orderBy(desc(placeReviews.id))
         .limit(200);
 
       return c.json(
@@ -256,8 +256,8 @@ export const foodRoutes = new Hono<{ Bindings: Bindings }>()
   )
   .post(
     "/spots/:id/reviews",
-    zValidator("param", foodIdParamSchema),
-    zValidator("json", foodReviewBodySchema),
+    zValidator("param", placeIdParamSchema),
+    zValidator("json", placeReviewBodySchema),
     async (c) => {
       const { id } = c.req.valid("param");
       const body = c.req.valid("json");
@@ -269,23 +269,23 @@ export const foodRoutes = new Hono<{ Bindings: Bindings }>()
       const db = createDb(c.env.DB);
 
       const [spot] = await db
-        .select({ id: foodSpots.id, name: foodSpots.name })
-        .from(foodSpots)
-        .where(eq(foodSpots.id, id))
+        .select({ id: places.id, name: places.name })
+        .from(places)
+        .where(eq(places.id, id))
         .limit(1);
 
       if (spot === undefined) {
         return c.json({ error: "地点不存在" }, 404);
       }
 
-      if (await hitWriteLimit(c, "food-review")) {
+      if (await hitWriteLimit(c, "place-review")) {
         return c.json({ error: "操作太频繁，请稍后再试" }, 429);
       }
 
       const failure = await verifyTurnstile(
         c,
         body.turnstileToken,
-        "food-review"
+        "place-review"
       );
 
       if (failure !== null) {
@@ -293,7 +293,7 @@ export const foodRoutes = new Hono<{ Bindings: Bindings }>()
       }
 
       const [row] = await db
-        .insert(foodReviews)
+        .insert(placeReviews)
         .values({
           spotId: id,
           nickname: body.nickname,
@@ -309,7 +309,7 @@ export const foodRoutes = new Hono<{ Bindings: Bindings }>()
         .returning();
 
       notifyWebEvent(c.executionCtx, c.env, new URL(c.req.url).origin, {
-        type: "food-review",
+        type: "place-review",
         spotName: spot.name,
         rating: row.rating,
         taste: row.taste,

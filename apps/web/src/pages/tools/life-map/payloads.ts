@@ -1,7 +1,7 @@
 import {
-  createFoodSpotBodySchema,
-  foodReviewBodySchema,
-  foodCategorySchema,
+  createPlaceBodySchema,
+  placeCategorySchema,
+  placeReviewBodySchema,
 } from "@hackhtu/contracts";
 import { z } from "zod";
 
@@ -34,7 +34,7 @@ export const parseDishes = (text: string) =>
  */
 export const spotFormSchema = z.object({
   name: z.string().trim().min(1, "名称不能为空").max(40),
-  category: foodCategorySchema,
+  category: placeCategorySchema,
   description: z.string().max(500),
   address: z.string().max(80),
   latitude: z.number(),
@@ -66,7 +66,7 @@ export const toSpotPayload = (values: SpotFormValues) => {
     turnstileToken: values.turnstileToken,
   };
 
-  return createFoodSpotBodySchema.safeParse(payload).success ? payload : null;
+  return createPlaceBodySchema.safeParse(payload).success ? payload : null;
 };
 
 export const reviewFormSchema = z.object({
@@ -96,5 +96,5 @@ export const toReviewPayload = (values: ReviewFormValues) => {
     turnstileToken: values.turnstileToken,
   };
 
-  return foodReviewBodySchema.safeParse(payload).success ? payload : null;
+  return placeReviewBodySchema.safeParse(payload).success ? payload : null;
 };

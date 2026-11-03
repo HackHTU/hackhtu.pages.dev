@@ -1,4 +1,4 @@
-import type { FoodCategory } from "@hackhtu/contracts";
+import type { PlaceCategory } from "@hackhtu/contracts";
 import { PlusIcon } from "@phosphor-icons/react";
 
 import type { CampusKey } from "./constants";
@@ -11,7 +11,7 @@ import {
   CampusPills,
 } from "./map-ui";
 import type { PickPoint } from "./map-ui";
-import type { FoodSpot } from "./types";
+import type { Place } from "./types";
 
 /** 地图上方的全部浮层：搜索列表面板、选点状态、操作按钮。 */
 export const MapOverlays = ({
@@ -46,7 +46,7 @@ export const MapOverlays = ({
   onQueryChange: (value: string) => void;
   view: CampusKey;
   onViewChange: (value: CampusKey) => void;
-  spots: FoodSpot[];
+  spots: Place[];
   mapTotal: number;
   loading: boolean;
   picking: boolean;
@@ -55,9 +55,9 @@ export const MapOverlays = ({
   onPanelToggle: () => void;
   sheetOpen: boolean;
   onSheetToggle: () => void;
-  categories: FoodCategory[];
-  category: FoodCategory | null;
-  onCategoryChange: (category: FoodCategory | null) => void;
+  categories: PlaceCategory[];
+  category: PlaceCategory | null;
+  onCategoryChange: (category: PlaceCategory | null) => void;
   page: number;
   totalPages: number;
   onPage: (page: number) => void;
@@ -66,8 +66,8 @@ export const MapOverlays = ({
   onPickCancelPoint: () => void;
   onPickConfirm: () => void;
   onLocate: () => void;
-  onFocusSpot: (spot: FoodSpot) => void;
-  onOpenDetail: (spot: FoodSpot) => void;
+  onFocusSpot: (spot: Place) => void;
+  onOpenDetail: (spot: Place) => void;
 }) => {
   const pickHint = picking && picked === null;
   const pickConfirm = !pickHint && picked !== null;

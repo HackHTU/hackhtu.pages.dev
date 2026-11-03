@@ -211,3 +211,12 @@
     text-wrap: pretty;
   }
 }
+
+/* 横向标签条：保留滚动，但不显示滚动条。 */
+.scrollbar-none {
+  scrollbar-width: none;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}

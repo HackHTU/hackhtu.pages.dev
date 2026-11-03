@@ -1,4 +1,4 @@
-export interface FoodSpot {
+export interface Place {
   id: number;
   name: string;
   category: string;
@@ -14,7 +14,7 @@ export interface FoodSpot {
   averageRating: number | null;
 }
 
-export interface FoodReview {
+export interface PlaceReview {
   id: number;
   spotId: number;
   nickname: string;
@@ -28,8 +28,8 @@ export interface FoodReview {
   createdAt: string;
 }
 
-export interface FoodSpotsResponse {
-  items: FoodSpot[];
+export interface PlacesResponse {
+  items: Place[];
   page: number;
   pageSize: number;
   total: number;

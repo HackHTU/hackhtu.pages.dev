@@ -1,9 +1,9 @@
-import { commentsQuerySchema, siteCommentBodySchema } from "@hackhtu/contracts";
+import { siteCommentBodySchema } from "@hackhtu/contracts";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   CaretLeftIcon,
   CaretRightIcon,
-  ShieldCheckIcon,
+  ChatCircleDotsIcon,
 } from "@phosphor-icons/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRef, useState } from "react";
@@ -27,14 +27,14 @@ const apiErrorSchema = z.object({ error: z.string().optional() });
 
 const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY ?? "";
 
-interface CommentFormValues {
+interface FeedbackFormValues {
   nickname: string;
   body: string;
   turnstileToken: string;
   website?: string;
 }
 
-const CommentForm = ({
+const FeedbackForm = ({
   form,
   onSubmit,
   isPending,
@@ -45,8 +45,8 @@ const CommentForm = ({
   turnstileReady,
   turnstileKey,
 }: {
-  form: UseFormReturn<CommentFormValues>;
-  onSubmit: (values: CommentFormValues) => void;
+  form: UseFormReturn<FeedbackFormValues>;
+  onSubmit: (values: FeedbackFormValues) => void;
   isPending: boolean;
   isSuccess: boolean;
   errorMessage: string | undefined;
@@ -57,11 +57,11 @@ const CommentForm = ({
 }) => (
   <Card className="h-fit">
     <div className="flex items-start gap-3">
-      <ShieldCheckIcon className="mt-1 size-5 shrink-0" aria-hidden="true" />
+      <ChatCircleDotsIcon className="text-primary mt-0.5 size-5 shrink-0" />
       <div>
-        <CardTitle>写一条评论</CardTitle>
+        <CardTitle>写一条反馈</CardTitle>
         <CardDescription className="mt-2">
-          支持纯文本，不支持 Markdown、链接和图片。
+          用不了、找不到、想加什么工具，都可以说。纯文本，不支持图片和附件。
         </CardDescription>
       </div>
     </div>
@@ -74,9 +74,9 @@ const CommentForm = ({
       }}
     >
       <div>
-        <Label htmlFor="nickname">称呼</Label>
+        <Label htmlFor="feedback-nickname">称呼</Label>
         <Input
-          id="nickname"
+          id="feedback-nickname"
           className="mt-2"
           maxLength={24}
           placeholder="怎么称呼你"
@@ -89,9 +89,9 @@ const CommentForm = ({
         ) : null}
       </div>
       <div>
-        <Label htmlFor="body">评论内容</Label>
+        <Label htmlFor="feedback-body">反馈内容</Label>
         <Textarea
-          id="body"
+          id="feedback-body"
           className="mt-2 min-h-32"
           maxLength={300}
           placeholder="想说的话，最多 300 字"
@@ -104,9 +104,9 @@ const CommentForm = ({
         ) : null}
       </div>
       <div className="hidden" aria-hidden="true">
-        <Label htmlFor="website">网站</Label>
+        <Label htmlFor="feedback-website">网站</Label>
         <Input
-          id="website"
+          id="feedback-website"
           tabIndex={-1}
           autoComplete="off"
           {...form.register("website")}
@@ -138,43 +138,39 @@ const CommentForm = ({
         <p className="text-destructive text-sm">{errorMessage}</p>
       )}
       {isSuccess ? (
-        <p className="text-muted-foreground text-sm">
-          提交成功，评论已公开显示。
-        </p>
+        <p className="text-muted-foreground text-sm">提交成功，反馈已记录。</p>
       ) : null}
       <Button
         className="w-full"
         type="submit"
         disabled={isPending || !turnstileReady || TURNSTILE_SITE_KEY === ""}
       >
-        {isPending ? "提交中" : "发送评论"}
+        {isPending ? "提交中" : "提交反馈"}
       </Button>
     </form>
   </Card>
 );
 
-export const CommentsPage = () => {
+export const FeedbackPage = () => {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
 
-  const commentsQuery = useQuery({
-    queryKey: ["comments", page],
+  const feedbackQuery = useQuery({
+    queryKey: ["feedback", page],
     queryFn: async () => {
-      const query = commentsQuerySchema.parse({ page, pageSize: PAGE_SIZE });
-
       const res = await api.comments.$get({
-        query: { page: String(query.page), pageSize: String(query.pageSize) },
+        query: { page: String(page), pageSize: String(PAGE_SIZE) },
       });
 
       if (!res.ok) {
-        throw new Error("评论加载失败");
+        throw new Error("反馈加载失败");
       }
 
       return await res.json();
     },
   });
 
-  const form = useForm({
+  const form = useForm<FeedbackFormValues>({
     resolver: zodResolver(siteCommentBodySchema),
     defaultValues: { nickname: "", body: "", turnstileToken: "", website: "" },
   });
@@ -198,16 +194,9 @@ export const CommentsPage = () => {
     setTurnstileReady(false);
   };
 
-  const submitComment = useMutation({
-    mutationFn: async (values: {
-      nickname: string;
-      body: string;
-      turnstileToken: string;
-      website?: string;
-    }) => {
-      const res = await api.comments.$post({
-        json: values,
-      });
+  const submitFeedback = useMutation({
+    mutationFn: async (values: FeedbackFormValues) => {
+      const res = await api.comments.$post({ json: values });
 
       if (!res.ok) {
         const parsed = apiErrorSchema.safeParse(await res.json());
@@ -226,13 +215,10 @@ export const CommentsPage = () => {
       setTurnstileReady(false);
       turnstileRef.current?.reset();
       turnstileRef.current = null;
-
       setPage(1);
-      await queryClient.invalidateQueries({ queryKey: ["comments"] });
+      await queryClient.invalidateQueries({ queryKey: ["feedback"] });
     },
     onError: () => {
-      // token 可能已经被服务端消费掉，失败后必须重新验证，否则重试会一直
-      // 返回 timeout-or-duplicate。
       form.setValue("turnstileToken", "");
       setTurnstileReady(false);
       turnstileRef.current = null;
@@ -240,93 +226,93 @@ export const CommentsPage = () => {
     },
   });
 
-  const comments = commentsQuery.data?.items ?? [];
-  const totalPages = commentsQuery.data?.totalPages ?? 1;
+  const items = feedbackQuery.data?.items ?? [];
+  const totalPages = feedbackQuery.data?.totalPages ?? 1;
 
   return (
     <ContentPage
-      kicker="社区"
-      title="匿名评论区"
-      description="不登录，不留联系方式。这里使用纯文本评论，先通过 Cloudflare 人机验证，再由系统展示。请不要填写真实姓名、学号或其他敏感信息。"
+      kicker="反馈"
+      title="意见反馈"
+      description="不登录、不留联系方式，匿名告诉我们哪里不好用、想加什么。纯文本提交，先通过 Cloudflare 人机验证。"
     >
       <div className="grid gap-8 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
-        <CommentForm
+        <FeedbackForm
           form={form}
           onSubmit={(values) => {
-            submitComment.mutate(values);
+            submitFeedback.mutate(values);
           }}
-          isPending={submitComment.isPending}
-          isSuccess={submitComment.isSuccess}
-          errorMessage={submitComment.error?.message}
+          isPending={submitFeedback.isPending}
+          isSuccess={submitFeedback.isSuccess}
+          errorMessage={submitFeedback.error?.message}
           onVerify={handleTurnstileVerify}
           onExpire={handleTurnstileExpire}
           turnstileReady={turnstileReady}
           turnstileKey={turnstileKey}
         />
 
-        <section aria-labelledby="comment-list-title" className="space-y-4">
+        <section aria-labelledby="feedback-list-title" className="space-y-4">
           <div className="flex items-end justify-between gap-4">
             <div>
               <p className="text-muted-foreground text-sm font-semibold">
-                最新留言
+                最新反馈
               </p>
               <h2
-                id="comment-list-title"
+                id="feedback-list-title"
                 className="mt-1 text-2xl font-semibold"
               >
-                大家在说什么
+                大家怎么说
               </h2>
             </div>
-            {commentsQuery.data ? (
+            {feedbackQuery.data ? (
               <p className="text-muted-foreground text-sm">
-                共 {commentsQuery.data.total} 条
+                共 {feedbackQuery.data.total} 条
               </p>
             ) : null}
           </div>
-          {commentsQuery.isLoading ? (
-            <div className="space-y-4" aria-label="正在加载评论">
+          {feedbackQuery.isLoading ? (
+            <div className="space-y-4" aria-label="正在加载反馈">
               {Array.from({ length: 3 }, (_, index) => (
                 <Card key={index} className="h-32" />
               ))}
             </div>
           ) : null}
-          {commentsQuery.isError ? (
+          {feedbackQuery.isError ? (
             <Card>
               <p className="text-destructive text-sm">
-                评论加载失败，请稍后重试。
+                反馈加载失败，请稍后重试。
               </p>
             </Card>
           ) : null}
-          {!commentsQuery.isLoading &&
-          !commentsQuery.isError &&
-          comments.length === 0 ? (
+          {!feedbackQuery.isLoading &&
+          !feedbackQuery.isError &&
+          items.length === 0 ? (
             <Card>
-              <CardTitle>还没有评论</CardTitle>
+              <CardTitle>还没有反馈</CardTitle>
               <CardDescription>
-                来写第一条，给后面的同学留个话。
+                来写第一条，帮我们把站点做得更好。
               </CardDescription>
             </Card>
           ) : null}
-          {comments.map((comment) => (
+          {items.map((item) => (
             <article
-              key={comment.id}
+              key={item.id}
               className="border-border bg-card text-card-foreground rounded-2xl border p-6"
             >
               <div className="flex flex-wrap items-baseline justify-between gap-3">
-                <h3 className="text-lg font-semibold">{comment.nickname}</h3>
+                <h3 className="text-lg font-semibold">{item.nickname}</h3>
                 <time className="text-muted-foreground text-sm">
-                  {comment.createdAt}
+                  {item.createdAt}
                 </time>
               </div>
               <p className="text-muted-foreground mt-4 text-sm leading-6 break-words whitespace-pre-wrap">
-                {comment.body}
+                {item.body}
               </p>
             </article>
           ))}
           {totalPages > 1 ? (
             <nav
               className="flex items-center justify-between gap-4 pt-2"
-              aria-label="评论分页"
+              aria-label="反馈分页"
             >
               <Button
                 variant="outline"
@@ -336,7 +322,7 @@ export const CommentsPage = () => {
                   setPage((current) => current - 1);
                 }}
               >
-                <CaretLeftIcon aria-hidden="true" /> 上一页
+                <CaretLeftIcon /> 上一页
               </Button>
               <p className="text-muted-foreground text-sm">
                 第 {page} / {totalPages} 页
@@ -349,7 +335,7 @@ export const CommentsPage = () => {
                   setPage((current) => current + 1);
                 }}
               >
-                下一页 <CaretRightIcon aria-hidden="true" />
+                下一页 <CaretRightIcon />
               </Button>
             </nav>
           ) : null}

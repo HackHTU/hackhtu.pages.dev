@@ -1,5 +1,5 @@
-import { foodCategories } from "@hackhtu/contracts";
-import type { FoodCategory } from "@hackhtu/contracts";
+import { placeCategories } from "@hackhtu/contracts";
+import type { PlaceCategory } from "@hackhtu/contracts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useState } from "react";
 
@@ -8,16 +8,16 @@ import "leaflet/dist/leaflet.css";
 import { api } from "@/lib/api";
 
 import type { CampusKey } from "./constants";
-import { CreateSpotDialog } from "./create-spot-dialog";
+import { CreatePlaceDialog } from "./create-place-dialog";
 import { wgs84ToGcj02 } from "./gcj02";
 import { MapOverlays } from "./map-overlays";
 import type { PickPoint } from "./map-ui";
 import { MapView } from "./map-view";
 import type { SpotFocus, Viewport } from "./map-view";
 import type { ReviewFormValues } from "./payloads";
-import { SpotDetailDialog } from "./spot-detail-dialog";
-import type { FoodSpot } from "./types";
-import { useFoodMapMutations } from "./use-food-map-mutations";
+import { PlaceDetailDialog } from "./place-detail-dialog";
+import type { Place } from "./types";
+import { useLifeMapMutations } from "./use-life-map-mutations";
 
 /** 详情弹窗插槽：内部自管评价列表查询。 */
 const SpotDetailSlot = ({
@@ -28,7 +28,7 @@ const SpotDetailSlot = ({
   setReviewError,
   reviewTurnstileKey,
 }: {
-  spot: FoodSpot | null;
+  spot: Place | null;
   onClose: () => void;
   onSubmitReview: (spotId: number, values: ReviewFormValues) => void;
   reviewError: string | undefined;
@@ -36,14 +36,14 @@ const SpotDetailSlot = ({
   reviewTurnstileKey: number;
 }) => {
   const reviewsQuery = useQuery({
-    queryKey: ["food-reviews", spot?.id],
+    queryKey: ["place-reviews", spot?.id],
     enabled: spot !== null,
     queryFn: async () => {
       if (spot === null) {
         return [];
       }
 
-      const res = await api.food.spots[":id"].reviews.$get({
+      const res = await api.places.spots[":id"].reviews.$get({
         param: { id: String(spot.id) },
       });
 
@@ -60,7 +60,7 @@ const SpotDetailSlot = ({
   }
 
   return (
-    <SpotDetailDialog
+    <PlaceDetailDialog
       spot={spot}
       reviews={reviewsQuery.data ?? []}
       reviewsLoading={reviewsQuery.isLoading}
@@ -76,7 +76,7 @@ const SpotDetailSlot = ({
   );
 };
 
-export const FoodMapPage = () => {
+export const LifeMapPage = () => {
   const queryClient = useQueryClient();
   // 校区只是地图视野快捷键，不参与数据过滤；地点按视野加载。
   const [view, setView] = useState<CampusKey>("main");
@@ -86,14 +86,14 @@ export const FoodMapPage = () => {
   const [picked, setPicked] = useState<PickPoint | null>(null);
   const [located, setLocated] = useState<PickPoint | null>(null);
   const [focus, setFocus] = useState<SpotFocus | null>(null);
-  const [selected, setSelected] = useState<FoodSpot | null>(null);
+  const [selected, setSelected] = useState<Place | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [panelOpen, setPanelOpen] = useState(true);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [viewport, setViewport] = useState<Viewport | null>(null);
 
   // 搜索/分类变化后回到第一页。
-  const [activeCategory, setActiveCategory] = useState<FoodCategory | null>(
+  const [activeCategory, setActiveCategory] = useState<PlaceCategory | null>(
     null
   );
 
@@ -108,7 +108,7 @@ export const FoodMapPage = () => {
     setReviewError,
     createTurnstileKey,
     reviewTurnstileKey,
-  } = useFoodMapMutations({ queryClient });
+  } = useLifeMapMutations({ queryClient });
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -128,7 +128,7 @@ export const FoodMapPage = () => {
   // 输入搜索词时强制展开列表面板（用户主动收起后，再次搜索仍会展开）。
   const panelVisible = panelOpen || debouncedQuery.length > 0;
 
-  const changeCategory = (next: FoodCategory | null) => {
+  const changeCategory = (next: PlaceCategory | null) => {
     setActiveCategory(next);
     setPage(1);
   };
@@ -140,12 +140,7 @@ export const FoodMapPage = () => {
 
   // 地图按当前视野（bbox）加载点位，缩小时前端聚合成数字气泡。
   const mapQuery = useQuery({
-    queryKey: [
-      "food-spots-viewport",
-      viewportKey,
-      debouncedQuery,
-      activeCategory,
-    ],
+    queryKey: ["place-spots-viewport", viewportKey, debouncedQuery],
     enabled: viewport !== null,
     placeholderData: (previous) => previous,
     queryFn: async () => {
@@ -153,7 +148,7 @@ export const FoodMapPage = () => {
         return null;
       }
 
-      const res = await api.food.spots.$get({
+      const res = await api.places.spots.$get({
         query: {
           minLat: String(viewport.minLat),
           maxLat: String(viewport.maxLat),
@@ -162,12 +157,11 @@ export const FoodMapPage = () => {
           page: "1",
           pageSize: "300",
           q: debouncedQuery.length > 0 ? debouncedQuery : undefined,
-          category: activeCategory ?? undefined,
         },
       });
 
       if (!res.ok) {
-        throw new Error("美食地点加载失败");
+        throw new Error("地点加载失败");
       }
 
       return await res.json();
@@ -176,34 +170,39 @@ export const FoodMapPage = () => {
 
   // 列表走服务端分页；翻页时保留上一页数据避免闪烁。
   const listQuery = useQuery({
-    queryKey: ["food-spots-list", debouncedQuery, activeCategory, page],
+    queryKey: ["place-spots-list", debouncedQuery, activeCategory, page],
     placeholderData: (previous) => previous,
     queryFn: async () => {
-      const res = await api.food.spots.$get({
+      const res = await api.places.spots.$get({
         query: {
           page: String(page),
           pageSize: "10",
           q: debouncedQuery.length > 0 ? debouncedQuery : undefined,
-          category: activeCategory ?? undefined,
         },
       });
 
       if (!res.ok) {
-        throw new Error("美食地点加载失败");
+        throw new Error("地点加载失败");
       }
 
       return await res.json();
     },
   });
 
-  const mapSpots: FoodSpot[] = mapQuery.data?.items ?? [];
+  const allMapSpots: Place[] = mapQuery.data?.items ?? [];
 
-  // chips 固定用契约里的分类全集（顺序稳定），只显示已有地点的分类。
-  const categories = foodCategories.filter((item) =>
-    mapSpots.some((spot) => spot.category === item)
+  // 分类只在客户端过滤地图点位，避免选中分类后 chips 只剩一个。
+  const mapSpots =
+    activeCategory === null
+      ? allMapSpots
+      : allMapSpots.filter((spot) => spot.category === activeCategory);
+
+  // chips 用未过滤的视野点位计算，切换分类时保持完整。
+  const categories = placeCategories.filter((item) =>
+    allMapSpots.some((spot) => spot.category === item)
   );
 
-  const listSpots: FoodSpot[] = listQuery.data?.items ?? [];
+  const listSpots: Place[] = listQuery.data?.items ?? [];
   const totalPages = listQuery.data?.totalPages ?? 1;
 
   const handlePick = useCallback((point: PickPoint) => {
@@ -211,12 +210,12 @@ export const FoodMapPage = () => {
   }, []);
 
   /** 列表/标记点击：先聚焦地图（飞行 + tooltip），详情从 tooltip 进入。 */
-  const focusSpot = (spot: FoodSpot) => {
+  const focusSpot = (spot: Place) => {
     setFocus({ id: spot.id, lat: spot.latitude, lng: spot.longitude });
     setSheetOpen(false);
   };
 
-  const openDetail = (spot: FoodSpot) => {
+  const openDetail = (spot: Place) => {
     setSelected(spot);
     setReviewError(undefined);
   };
@@ -300,7 +299,7 @@ export const FoodMapPage = () => {
         view={view}
         onViewChange={setView}
         spots={listSpots}
-        mapTotal={mapQuery.data?.total ?? 0}
+        mapTotal={mapSpots.length}
         loading={listQuery.isLoading}
         picking={picking}
         picked={picked}
@@ -332,7 +331,7 @@ export const FoodMapPage = () => {
       />
 
       {showCreate && picked !== null ? (
-        <CreateSpotDialog
+        <CreatePlaceDialog
           point={picked}
           onClose={() => {
             setShowCreate(false);

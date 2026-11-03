@@ -25,7 +25,7 @@ export default defineConfig({
         name: "Hack HTU",
         short_name: "Hack HTU",
         description:
-          "河师大学生工具站：课程评价查询、学校新闻、请假条生成、跨平台位置模拟教程、校园网一键登录脚本和匿名评论区。",
+          "河师大学生工具站：课程评价查询、学校新闻、请假条生成、跨平台位置模拟教程、校园网一键登录脚本、校园生活地图、校园树洞墙和意见反馈。",
         lang: "zh-CN",
         start_url: "/",
         scope: "/",

@@ -20,6 +20,8 @@ const buttonVariants = cva(
         default: "px-3 py-2",
         sm: "px-3 py-2 text-sm",
         lg: "px-4 py-2",
+        /** 筛选 chips、标签选择这类紧凑的小按钮。 */
+        chip: "px-3 py-1.5 text-sm",
       },
     },
     defaultVariants: {

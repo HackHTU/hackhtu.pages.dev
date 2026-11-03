@@ -9,7 +9,16 @@ const REQUEST_TIMEOUT_MS = 10_000;
 
 /** 站点侧触发、需要推到群里的通知事件。 */
 export type WebNotifyEvent =
-  | { type: "comment"; nickname: string; body: string }
+  | { type: "feedback"; nickname: string; body: string }
+  | { type: "wall-post"; nickname: string; body: string; tag: string }
+  | {
+      type: "wall-comment";
+      postId: number;
+      postNickname: string;
+      postExcerpt: string;
+      nickname: string;
+      body: string;
+    }
   | {
       type: "class";
       name: string;
@@ -27,7 +36,7 @@ export type WebNotifyEvent =
       comment: string | null;
     }
   | {
-      type: "food-spot";
+      type: "place-spot";
       name: string;
       category: string;
       description: string | null;
@@ -37,7 +46,7 @@ export type WebNotifyEvent =
       nickname: string;
     }
   | {
-      type: "food-review";
+      type: "place-review";
       spotName: string;
       rating: number;
       taste: number | null;
@@ -94,9 +103,10 @@ const orDash = (value: string | number | null | undefined): string => {
 };
 
 const SITE_LINKS = {
-  comments: "/pages/comment",
+  feedback: "/pages/comment",
+  wall: "/pages/wall",
   classes: "/tools/class-recommend",
-  foodMap: "/tools/food-map",
+  lifeMap: "/tools/life-map",
 } as const;
 
 /**
@@ -110,14 +120,38 @@ const escapeMarkdown = (input: string): string =>
 
 /** 把事件渲染成 rich markdown（`sendRichMessage` 用）。 */
 const renderEvent = (event: WebNotifyEvent, origin: string): string => {
-  if (event.type === "comment") {
+  if (event.type === "feedback") {
     return [
-      "**💬 站点收到新评论** #新评论",
+      "**📬 收到新的意见反馈** #意见反馈",
       "",
       `**称呼**：${escapeMarkdown(event.nickname)}`,
       `**内容**：${escapeMarkdown(event.body)}`,
       "",
-      `[去评论区看看](${origin}${SITE_LINKS.comments})`,
+      `[去意见反馈看看](${origin}${SITE_LINKS.feedback})`,
+    ].join("\n\n");
+  }
+
+  if (event.type === "wall-post") {
+    return [
+      "**🧱 校园树洞墙有新帖** #校园树洞墙",
+      "",
+      `**称呼**：${escapeMarkdown(event.nickname)}`,
+      `**标签**：${escapeMarkdown(event.tag)}`,
+      `**内容**：${escapeMarkdown(event.body)}`,
+      "",
+      `[去校园树洞墙看看](${origin}${SITE_LINKS.wall})`,
+    ].join("\n\n");
+  }
+
+  if (event.type === "wall-comment") {
+    return [
+      "**💬 校园树洞墙有新评论** #校园树洞墙",
+      "",
+      `**帖子**：${escapeMarkdown(event.postNickname)}：${escapeMarkdown(event.postExcerpt)}`,
+      `**评论人**：${escapeMarkdown(event.nickname)}`,
+      `**内容**：${escapeMarkdown(event.body)}`,
+      "",
+      `[去校园树洞墙看看](${origin}${SITE_LINKS.wall})`,
     ].join("\n\n");
   }
 
@@ -136,7 +170,7 @@ const renderEvent = (event: WebNotifyEvent, origin: string): string => {
     ].join("\n\n");
   }
 
-  if (event.type === "food-spot") {
+  if (event.type === "place-spot") {
     const lines = [
       `**名称**：${escapeMarkdown(event.name)}`,
       `**分类**：${escapeMarkdown(event.category)}`,
@@ -149,15 +183,15 @@ const renderEvent = (event: WebNotifyEvent, origin: string): string => {
     ];
 
     return [
-      "**🍜 美食地图新增地点** #美食地图",
+      "**📍 校园生活地图新增地点** #校园生活地图",
       "",
       lines.join("\n"),
       "",
-      `[去美食地图看看](${origin}${SITE_LINKS.foodMap})`,
+      `[去校园生活地图看看](${origin}${SITE_LINKS.lifeMap})`,
     ].join("\n\n");
   }
 
-  if (event.type === "food-review") {
+  if (event.type === "place-review") {
     const scores = [
       event.taste === null ? null : `口味 ${event.taste}`,
       event.portion === null ? null : `分量 ${event.portion}`,
@@ -176,11 +210,11 @@ const renderEvent = (event: WebNotifyEvent, origin: string): string => {
     ];
 
     return [
-      "**⭐ 美食地图新增评价** #美食地图",
+      "**⭐ 校园生活地图新增评价** #校园生活地图",
       "",
       lines.join("\n"),
       "",
-      `[去美食地图看看](${origin}${SITE_LINKS.foodMap})`,
+      `[去校园生活地图看看](${origin}${SITE_LINKS.lifeMap})`,
     ].join("\n\n");
   }
 

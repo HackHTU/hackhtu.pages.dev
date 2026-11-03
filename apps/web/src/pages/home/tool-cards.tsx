@@ -8,6 +8,7 @@ import { useDarkMode } from "@/hooks/use-dark-mode";
 import { CampusLoginSvg } from "./illustrations/campus-login-svg";
 import { ClassRecommendSvg } from "./illustrations/class-recommend-svg";
 import { CommentsSvg } from "./illustrations/comments-svg";
+import { FeedbackSvg } from "./illustrations/feedback-svg";
 import { FoodMapSvg } from "./illustrations/food-map-svg";
 import { LeaveSlipSvg } from "./illustrations/leave-slip-svg";
 import { LocationSvg } from "./illustrations/location-svg";
@@ -55,16 +56,23 @@ const tools: {
     Illustration: LocationSvg,
   },
   {
-    href: "/tools/food-map",
-    title: "美食地图",
-    description: "三个校区的美食地点合集，打分评价、推荐菜和小红书/美团链接。",
+    href: "/tools/life-map",
+    title: "校园生活地图",
+    description:
+      "三个校区的美食、打印、快递、自习室和维修点，打分评价、特色标签和外部链接。",
     Illustration: FoodMapSvg,
   },
   {
-    href: "/pages/comment",
-    title: "匿名评论区",
-    description: "匿名留言，不用登录。",
+    href: "/pages/wall",
+    title: "校园树洞墙",
+    description: "匿名发帖，贴标签、点赞和评论。",
     Illustration: CommentsSvg,
+  },
+  {
+    href: "/pages/comment",
+    title: "意见反馈",
+    description: "匿名反馈使用问题、Bug 或想加的工具。",
+    Illustration: FeedbackSvg,
   },
 ];
 

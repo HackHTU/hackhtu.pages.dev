@@ -1,8 +1,31 @@
-import { foodCampuses } from "@hackhtu/contracts";
+import { foodCampuses, placeCategoryGroups } from "@hackhtu/contracts";
 
 import { wgs84ToGcj02 } from "./gcj02";
 
-/** 校区只是地图视野快捷键；美食地点本身不绑定校区。 */
+export { placeCategories as PLACE_CATEGORIES } from "@hackhtu/contracts";
+
+/** 分类分组名 → 标记颜色：同一大类的分类共用一种颜色，加分类无需逐个配色。 */
+const GROUP_COLORS = {
+  美食: "#e8a13c",
+  学习: "#3b82f6",
+  生活: "#22a06b",
+  运动: "#8b5cf6",
+  出行: "#ef4444",
+  其他: "#64748b",
+} satisfies Record<string, string>;
+
+type CategoryGroup = keyof typeof GROUP_COLORS;
+
+/** 分类 → 所属分组名：直接读契约的分组表，新增分类自动跟随分组配色。 */
+const groupOf = (category: string): CategoryGroup => {
+  const group = placeCategoryGroups.find((item) =>
+    item.categories.some((known) => known === category)
+  );
+
+  return group === undefined ? "其他" : group.name;
+};
+
+/** 校区只是地图视野快捷键；地点本身不绑定校区。 */
 export type CampusKey = keyof typeof foodCampuses;
 
 const toCenter = (lng: number, lat: number): [number, number] => {
@@ -57,35 +80,9 @@ export const nearestCampus = (point: PickPointLike): CampusKey => {
   return best;
 };
 
-export const FOOD_CATEGORIES = [
-  "食堂窗口",
-  "面食米粉",
-  "快餐便当",
-  "烧烤炸串",
-  "奶茶甜品",
-  "地方菜",
-  "小吃零食",
-  "其他",
-] as const;
-
-/** 分类 → 标记颜色，地图上一眼区分类型。 */
-export const CATEGORY_COLORS = {
-  食堂窗口: "#22a06b",
-  面食米粉: "#e8a13c",
-  快餐便当: "#3b82f6",
-  烧烤炸串: "#ef4444",
-  奶茶甜品: "#ec4899",
-  地方菜: "#8b5cf6",
-  小吃零食: "#f59e0b",
-  其他: "#64748b",
-} satisfies Record<string, string>;
-
-const hasCategory = (key: string): key is keyof typeof CATEGORY_COLORS =>
-  key in CATEGORY_COLORS;
-
-/** 分类色查询；未知分类回退到中性灰。 */
+/** 分类色查询：按大类配色，未知分类回退到中性灰。 */
 export const categoryColor = (category: string): string =>
-  hasCategory(category) ? CATEGORY_COLORS[category] : CATEGORY_COLORS.其他;
+  GROUP_COLORS[groupOf(category)];
 
 /** 高德 URI（免 Key）：打开高德 App/网页查看某坐标的标记。 */
 export const amapMarkerUrl = (lng: number, lat: number, name: string) =>

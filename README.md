@@ -42,9 +42,11 @@ Cloudflare Pages 站点。前端是 Vite + React，接口是 Hono Pages Function
 | 🌐 校园网一键登录 | `/tools/campus-login` | Windows / macOS / Linux 终端登录脚本，自动识别平台下载 |
 | 📝 请假条生成器 | `/tools/leave-slip` | 按学校格式生成请假条，可导出成图片 |
 | 📍 跨平台位置模拟教程 | `/tools/location-simulation-tutorial` | 网页、Android、iOS 的模拟定位方法，另附学习通签到说明 |
-| 💬 匿名评论区 | `/pages/comment` | 匿名留言，不用登录 |
+| 🗺️ 校园生活地图 | `/tools/life-map` | 三个校区的美食、打印、快递、自习室和维修点，打分评价 |
+| 💬 校园树洞墙 | `/pages/wall` | 匿名发帖，标签、点赞、一级评论、搜索和筛选，不用登录 |
+| 📬 意见反馈 | `/pages/comment` | 匿名反馈使用问题或建议，不用登录 |
 
-> 旧链接 `/tools/fake-notebook` 会自动跳转到 `/tools/leave-slip`。
+> 旧链接 `/tools/fake-notebook` 会自动跳转到 `/tools/leave-slip`；`/tools/food-map` 会自动跳转到 `/tools/life-map`。
 
 ## 技术栈
 
@@ -127,9 +129,13 @@ bun run d1:local -- --command="SELECT * FROM class_info LIMIT 5"
 
 站点写库成功后会把事件同步推到 Telegram 群，群里能第一时间看到站点动态：
 
-- `POST /api/comments`：新增匿名评论
+- `POST /api/comments`：意见反馈新增留言
+- `POST /api/wall/posts`：校园树洞墙新增帖子
+- `POST /api/wall/posts/:id/comments`：校园树洞墙新增评论
 - `POST /api/classes`：新增课程
 - `POST /api/classes/:id/reviews`：新增课程评价
+- `POST /api/places/spots`：校园生活地图新增地点
+- `POST /api/places/spots/:id/reviews`：校园生活地图新增评价
 
 用 `sendRichMessage`（rich Markdown + 站点链接）发到 `NOTIFY_CHATS`（和 RSS 推送共用目标列表）。没配 `BOT_TOKEN` 或目标群时自动跳过；rich 排版被拒会退化成纯文本；发送通过 `waitUntil` 异步执行，不阻塞接口响应。
 
@@ -149,6 +155,7 @@ bot 源码在 `apps/bot`，通过 `functions/bot/[[route]].ts` 挂到同一个 P
 **功能**
 
 - 新成员进群立即禁言，发欢迎语和私聊深链；私聊随机抽一道河南师范大学题目，4 个按钮作答。答对解禁，答错或超时后作答会被移出群聊；一直不答保持禁言，管理员可用 `/unban` 解除。
+- 群消息只检查**发送者本人**的头像：没头像直接在群里 `@` 提醒；消息正文和昵称/用户名由同一个 clef 判定一起看，任一违规即走三次警告流程。
 - 本地关键词黑名单（博彩、代考、刷单等违规词）命中后删除消息并警告，累计三次封禁。
 - 管理员回复消息后使用 `/ban [分钟]` 禁言、`/banl` 或 `/kick` 踢出、`/unban` 解除。
 - `/soutu` 回复图片识图；带追踪参数的链接自动清理。
@@ -160,7 +167,7 @@ bot 源码在 `apps/bot`，通过 `functions/bot/[[route]].ts` 挂到同一个 P
 - 主模型 `@cf/qwen/qwen3.8-27b`，用 Vercel AI SDK（`ai`）+ `workers-ai-provider` 直接走 `AI` 绑定，不依赖 Workers 专属的 `agents`。
 - 私聊、@机器人、回复机器人直接回复，不再看关键词；其余群消息用 `@cf/cloudflare/clef-flash`（AI SDK `experimental_decide` + decision model 适配器）一次判断两件事：
   - 要不要让奶龙插话（instruction 里带人设，能认出语音转写的同音字写法）；
-  - 是否违规（博彩、病毒/钓鱼、诈骗、刷屏等；广告和 R18 允许，只处置违反法律法规的内容）。
+  - 是否违规（博彩、病毒/钓鱼、诈骗、刷屏等；广告和 R18 允许，只处置违反法律法规的内容）。违规判定同时看消息正文和发送者的昵称/用户名，任一违规即返回同一个 `violation` 结果。
 - decision 的 state 是消息数组：历史每条消息一个 part，最后一条带「候选消息」标记的才是判断对象，结合上下文但只判这一条。
 - 违规走三次警告制：前两次删除消息并警告，第 3 次起封禁；通知里用 spoiler 引用原消息内容，并挂「解除警告 / 解除封禁」按钮（仅管理员可用）。
 - 前提是群在白名单里、发送者是真人；私聊只对白名单群成员开放 AI。

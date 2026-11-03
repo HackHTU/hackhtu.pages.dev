@@ -5,9 +5,11 @@ import { cn } from "@/lib/utils";
 const features = [
   "课程评价查询",
   "学校新闻",
+  "校园生活地图",
+  "校园树洞墙",
   "请假条生成器",
   "位置模拟教程",
-  "匿名评论区",
+  "意见反馈",
 ];
 
 export const FeatureTitle = ({ className }: { className?: string }) => {

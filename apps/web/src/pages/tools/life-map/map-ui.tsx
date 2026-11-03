@@ -1,4 +1,4 @@
-import type { FoodCategory } from "@hackhtu/contracts";
+import type { PlaceCategory } from "@hackhtu/contracts";
 import {
   CaretDownIcon,
   CaretUpIcon,
@@ -12,7 +12,7 @@ import {
 import { CAMPUSES, CAMPUS_KEYS, nearestCampus } from "./constants";
 import type { CampusKey } from "./constants";
 import { CategoryChips, ListPager, SpotList } from "./list-widgets";
-import type { FoodSpot } from "./types";
+import type { Place } from "./types";
 
 export interface PickPoint {
   lat: number;
@@ -43,8 +43,8 @@ export const SearchInput = ({
       onChange={(event) => {
         onQueryChange(event.target.value);
       }}
-      placeholder="搜索美食地点"
-      aria-label="搜索美食地点"
+      placeholder="搜索地点"
+      aria-label="搜索地点"
       className="placeholder:text-muted-foreground min-w-0 flex-1 bg-transparent text-sm outline-none"
     />
     {showToggle && onToggle !== undefined ? (
@@ -116,7 +116,7 @@ export const AddButton = ({ onClick }: { onClick: () => void }) => (
     type="button"
     className="bg-primary text-primary-foreground flex size-11 shrink-0 items-center justify-center rounded-full shadow-xl"
     onClick={onClick}
-    aria-label="添加美食地点"
+    aria-label="添加地点"
   >
     <PlusIcon weight="bold" className="size-5" />
   </button>
@@ -155,16 +155,16 @@ export const SearchPanel = ({
   open: boolean;
   onToggle: () => void;
   total: number;
-  spots: FoodSpot[];
+  spots: Place[];
   loading: boolean;
-  categories: FoodCategory[];
-  category: FoodCategory | null;
-  onCategoryChange: (category: FoodCategory | null) => void;
+  categories: PlaceCategory[];
+  category: PlaceCategory | null;
+  onCategoryChange: (category: PlaceCategory | null) => void;
   page: number;
   totalPages: number;
   onPage: (page: number) => void;
-  onFocusSpot: (spot: FoodSpot) => void;
-  onOpenDetail: (spot: FoodSpot) => void;
+  onFocusSpot: (spot: Place) => void;
+  onOpenDetail: (spot: Place) => void;
 }) => {
   if (!open) {
     return null;
@@ -173,11 +173,11 @@ export const SearchPanel = ({
   return (
     <div
       className="border-border/70 bg-card/95 flex max-h-[60vh] flex-col overflow-hidden rounded-2xl border shadow-2xl backdrop-blur"
-      aria-label="美食地点列表"
+      aria-label="地点列表"
     >
       <div className="border-border/70 flex items-center justify-between border-b p-3.5">
         <div className="min-w-0">
-          <h1 className="text-sm font-semibold">美食地点</h1>
+          <h1 className="text-sm font-semibold">校园地点</h1>
           <p className="text-muted-foreground mt-0.5 text-xs">
             {total} 个地点 · 点「定位」在地图上查看
           </p>
@@ -232,16 +232,16 @@ export const MobileSheet = ({
   onAdd: () => void;
   onLocate: () => void;
   total: number;
-  spots: FoodSpot[];
+  spots: Place[];
   loading: boolean;
-  categories: FoodCategory[];
-  category: FoodCategory | null;
-  onCategoryChange: (category: FoodCategory | null) => void;
+  categories: PlaceCategory[];
+  category: PlaceCategory | null;
+  onCategoryChange: (category: PlaceCategory | null) => void;
   page: number;
   totalPages: number;
   onPage: (page: number) => void;
-  onFocusSpot: (spot: FoodSpot) => void;
-  onOpenDetail: (spot: FoodSpot) => void;
+  onFocusSpot: (spot: Place) => void;
+  onOpenDetail: (spot: Place) => void;
 }) => (
   <div className="pointer-events-auto absolute inset-x-4 bottom-4 lg:hidden">
     {open ? (
@@ -253,7 +253,7 @@ export const MobileSheet = ({
           aria-label="收起地点列表"
         >
           <span className="min-w-0">
-            <span className="block font-semibold">全部美食地点</span>
+            <span className="block font-semibold">全部校园地点</span>
             <span className="text-muted-foreground mt-0.5 block text-xs">
               {total} 个地点
             </span>
@@ -292,7 +292,7 @@ export const MobileSheet = ({
               className="text-primary size-4 shrink-0"
             />
             <span className="truncate text-sm font-medium">
-              {total > 0 ? `${total} 个美食地点` : "还没有地点，来分享第一个"}
+              {total > 0 ? `${total} 个地点` : "还没有地点，来分享第一个"}
             </span>
           </span>
           <CaretUpIcon
@@ -326,7 +326,7 @@ export const PickStatus = ({
       <div className="pointer-events-auto absolute inset-x-4 bottom-4 lg:inset-x-auto lg:bottom-8 lg:left-6">
         <div className="border-border/70 bg-card/95 flex items-center gap-2 rounded-xl border px-3 py-2 shadow-xl backdrop-blur">
           <p className="min-w-0 flex-1 text-sm font-medium">
-            在地图上点一下，选择美食位置
+            在地图上点一下，选择地点位置
           </p>
           <button
             type="button"
@@ -353,7 +353,7 @@ export const PickStatus = ({
             已选好位置：{CAMPUSES[nearestCampus(picked)].shortName}附近
           </p>
           <p className="text-muted-foreground truncate text-xs">
-            点「填写信息」补充店名和介绍
+            点「填写信息」补充名称和介绍
           </p>
         </div>
         <button

@@ -6,8 +6,8 @@ import { api } from "@/lib/api";
 import { toReviewPayload, toSpotPayload } from "./payloads";
 import type { ReviewFormValues, SpotFormValues } from "./payloads";
 
-/** 美食地图的提交逻辑：新增地点 + 发表评价，含各自的错误与 Turnstile 重试状态。 */
-export const useFoodMapMutations = ({
+/** 校园生活地图的提交逻辑：新增地点 + 发表评价，含各自的错误与 Turnstile 重试状态。 */
+export const useLifeMapMutations = ({
   queryClient,
 }: {
   queryClient: QueryClient;
@@ -26,7 +26,7 @@ export const useFoodMapMutations = ({
       return false;
     }
 
-    const res = await api.food.spots.$post({ json: payload });
+    const res = await api.places.spots.$post({ json: payload });
 
     if (!res.ok) {
       // SAFETY: 提交失败时 API 返回 { error?: string } 形式的 JSON。
@@ -39,8 +39,7 @@ export const useFoodMapMutations = ({
     }
 
     setCreateError(undefined);
-    await queryClient.invalidateQueries({ queryKey: ["food-spots-map"] });
-    await queryClient.invalidateQueries({ queryKey: ["food-spots-list"] });
+    await queryClient.invalidateQueries({ queryKey: ["place-spots"] });
 
     return true;
   };
@@ -54,7 +53,7 @@ export const useFoodMapMutations = ({
       return false;
     }
 
-    const res = await api.food.spots[":id"].reviews.$post({
+    const res = await api.places.spots[":id"].reviews.$post({
       param: { id: String(spotId) },
       json: payload,
     });
@@ -71,9 +70,8 @@ export const useFoodMapMutations = ({
 
     setReviewTurnstileKey((value) => value + 1);
     await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ["food-reviews", spotId] }),
-      queryClient.invalidateQueries({ queryKey: ["food-spots-map"] }),
-      queryClient.invalidateQueries({ queryKey: ["food-spots-list"] }),
+      queryClient.invalidateQueries({ queryKey: ["place-reviews", spotId] }),
+      queryClient.invalidateQueries({ queryKey: ["place-spots"] }),
     ]);
 
     return true;

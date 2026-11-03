@@ -10,9 +10,10 @@ import { hitWriteLimit } from "../rate-limit";
 import { localTimeString } from "../time";
 import { verifyTurnstile } from "../turnstile";
 
+/** 意见反馈：保留原来的匿名评论区，只有昵称、正文和分页。 */
 export const commentsRoutes = new Hono<{ Bindings: Bindings }>()
-  .get("/", async (c) => {
-    const query = commentsQuerySchema.parse(c.req.query());
+  .get("/", zValidator("query", commentsQuerySchema), async (c) => {
+    const query = c.req.valid("query");
     const db = createDb(c.env.DB);
 
     const [rows, totals] = await Promise.all([
@@ -67,7 +68,7 @@ export const commentsRoutes = new Hono<{ Bindings: Bindings }>()
       .returning();
 
     notifyWebEvent(c.executionCtx, c.env, new URL(c.req.url).origin, {
-      type: "comment",
+      type: "feedback",
       nickname: row.nickname,
       body: row.body,
     });

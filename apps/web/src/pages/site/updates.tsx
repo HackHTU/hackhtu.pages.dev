@@ -3,6 +3,12 @@ import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 
 const updates = [
   {
+    date: "2026-11-03",
+    version: "2.3",
+    tag: "NEW",
+    body: "美食地图升级为校园生活地图：新增打印、快递、自习室、维修等分类，打分和评价按地点类型展示。保留匿名评论区并改为意见反馈；新增校园树洞墙：支持标签、点赞、一级评论、搜索、筛选和排序。Telegram 群新增发送者头像提醒，昵称与消息一起做违规判断。",
+  },
+  {
     date: "2026-11-02",
     version: "2.2",
     tag: "NEW",

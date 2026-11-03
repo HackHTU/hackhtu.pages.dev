@@ -13,7 +13,7 @@ import Supercluster from "supercluster";
 import { CAMPUSES, categoryColor } from "./constants";
 import type { CampusKey } from "./constants";
 import type { PickPoint } from "./map-ui";
-import type { FoodSpot } from "./types";
+import type { Place } from "./types";
 
 const TILE_URL =
   "https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}";
@@ -38,11 +38,11 @@ export interface SpotFocus {
 }
 
 /** 分类色圆点标记；名字信息统一收进 tooltip，不在图上叠名牌。 */
-const spotIcon = (spot: FoodSpot) => {
+const spotIcon = (spot: Place) => {
   const color = categoryColor(spot.category);
 
   return L.divIcon({
-    className: "food-spot-marker",
+    className: "place-spot-marker",
     html: `<span style="display:block;width:14px;height:14px;border-radius:9999px;background:${color};border:3px solid #fff;box-shadow:0 1px 6px rgb(0 0 0 / 0.35);"></span>`,
     iconSize: [14, 14],
     iconAnchor: [7, 7],
@@ -52,14 +52,14 @@ const spotIcon = (spot: FoodSpot) => {
 /** 聚合数字气泡。 */
 const clusterIcon = (count: number) =>
   L.divIcon({
-    className: "food-spot-cluster",
+    className: "place-spot-cluster",
     html: `<span style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:9999px;background:#3462ad;color:#fff;font-size:12px;font-weight:700;border:3px solid #fff;box-shadow:0 1px 6px rgb(0 0 0 / 0.35);">${count}</span>`,
     iconSize: [32, 32],
     iconAnchor: [16, 16],
   });
 
 const pickedIcon = L.divIcon({
-  className: "food-spot-marker",
+  className: "place-spot-marker",
   html: `<span style="display:block;width:18px;height:18px;border-radius:9999px;background:#3b82f6;border:3px solid #fff;box-shadow:0 1px 6px rgb(0 0 0 / 0.4);"></span>`,
   iconSize: [18, 18],
   iconAnchor: [9, 9],
@@ -67,7 +67,7 @@ const pickedIcon = L.divIcon({
 
 /** 当前位置：蓝色光晕 + 实心点。 */
 const locatedIcon = L.divIcon({
-  className: "food-spot-marker",
+  className: "place-spot-marker",
   html: `
     <span style="position:absolute;left:-14px;top:-14px;display:block;width:28px;height:28px;border-radius:9999px;background:rgb(59 130 246 / 0.25);"></span>
     <span style="position:absolute;left:-6px;top:-6px;display:block;width:12px;height:12px;border-radius:9999px;background:#3b82f6;border:2px solid #fff;box-shadow:0 1px 6px rgb(0 0 0 / 0.4);"></span>
@@ -173,7 +173,7 @@ type SpotClusterFeature =
   | {
       type: "Feature";
       geometry: { coordinates: number[] };
-      properties: { spot: FoodSpot };
+      properties: { spot: Place };
     }
   | {
       type: "Feature";
@@ -191,10 +191,10 @@ const ClusterLayer = ({
   onFocus,
   onOpenDetail,
 }: {
-  spots: FoodSpot[];
+  spots: Place[];
   focus: SpotFocus | null;
-  onFocus: (spot: FoodSpot) => void;
-  onOpenDetail: (spot: FoodSpot) => void;
+  onFocus: (spot: Place) => void;
+  onOpenDetail: (spot: Place) => void;
 }) => {
   const map = useMap();
 
@@ -219,7 +219,7 @@ const ClusterLayer = ({
   const openedFocusRef = useRef<number | null>(null);
 
   const index = useMemo(() => {
-    const clustered = new Supercluster<{ spot: FoodSpot }>({
+    const clustered = new Supercluster<{ spot: Place }>({
       radius: 70,
       maxZoom: 16,
     });
@@ -375,14 +375,14 @@ export const MapView = ({
   onViewportChange,
 }: {
   view: CampusKey;
-  spots: FoodSpot[];
+  spots: Place[];
   picking: boolean;
   picked: PickPoint | null;
   located: PickPoint | null;
   focus: SpotFocus | null;
   onPick: (point: PickPoint) => void;
-  onFocus: (spot: FoodSpot) => void;
-  onOpenDetail: (spot: FoodSpot) => void;
+  onFocus: (spot: Place) => void;
+  onOpenDetail: (spot: Place) => void;
   onViewportChange: (viewport: Viewport) => void;
 }) => (
   <MapContainer
@@ -390,7 +390,7 @@ export const MapView = ({
     zoom={15}
     zoomControl={false}
     className="size-full"
-    aria-label="河南师范大学美食地图"
+    aria-label="河南师范大学校园生活地图"
   >
     <TileLayer url={TILE_URL} {...TILE_OPTIONS} />
     <ViewFocus view={view} />

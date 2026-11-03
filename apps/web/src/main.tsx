@@ -3,6 +3,7 @@ import {
   createRootRoute,
   createRoute,
   createRouter,
+  redirect,
   RouterProvider,
 } from "@tanstack/react-router";
 import { lazy, StrictMode, Suspense } from "react";
@@ -50,10 +51,10 @@ const CampusLoginPage = lazy(
     }))
 );
 
-const FoodMapPage = lazy(
+const LifeMapPage = lazy(
   async () =>
-    await import("@/pages/tools/food-map").then((module) => ({
-      default: module.FoodMapPage,
+    await import("@/pages/tools/life-map").then((module) => ({
+      default: module.LifeMapPage,
     }))
 );
 
@@ -85,10 +86,17 @@ const UpdatesPage = lazy(
     }))
 );
 
-const CommentsPage = lazy(
+const FeedbackPage = lazy(
   async () =>
-    await import("@/pages/comments").then((module) => ({
-      default: module.CommentsPage,
+    await import("@/pages/feedback").then((module) => ({
+      default: module.FeedbackPage,
+    }))
+);
+
+const WallPage = lazy(
+  async () =>
+    await import("@/pages/wall").then((module) => ({
+      default: module.WallPage,
     }))
 );
 
@@ -170,14 +178,21 @@ const campusLoginRoute = createRoute({
   ),
 });
 
+const lifeMapRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/tools/life-map",
+  component: () => (
+    <LazyPage>
+      <LifeMapPage />
+    </LazyPage>
+  ),
+});
+
+/** 旧地址兼容：/tools/food-map 永久跳转到 /tools/life-map。 */
 const foodMapRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/tools/food-map",
-  component: () => (
-    <LazyPage>
-      <FoodMapPage />
-    </LazyPage>
-  ),
+  beforeLoad: () => redirect({ to: "/tools/life-map" }),
 });
 
 const joinUsRoute = createRoute({
@@ -240,12 +255,22 @@ const updatesRoute = createRoute({
   ),
 });
 
-const commentsRoute = createRoute({
+const feedbackRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/pages/comment",
   component: () => (
     <LazyPage>
-      <CommentsPage />
+      <FeedbackPage />
+    </LazyPage>
+  ),
+});
+
+const wallRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/pages/wall",
+  component: () => (
+    <LazyPage>
+      <WallPage />
     </LazyPage>
   ),
 });
@@ -268,6 +293,7 @@ const router = createRouter({
     leaveSlipRoute,
     newsRoute,
     campusLoginRoute,
+    lifeMapRoute,
     foodMapRoute,
     joinUsRoute,
     privacyRoute,
@@ -275,7 +301,8 @@ const router = createRouter({
     termsRoute,
     termsHtmlRoute,
     updatesRoute,
-    commentsRoute,
+    feedbackRoute,
+    wallRoute,
     notFoundRoute,
   ]),
 });

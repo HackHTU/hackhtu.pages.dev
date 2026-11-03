@@ -1,9 +1,10 @@
 export {
   classInfo,
   classReviews,
-  foodReviews,
-  foodSpots,
+  placeReviews,
+  places,
   siteComments,
+  wallPosts,
 } from "./schema";
 
 export {

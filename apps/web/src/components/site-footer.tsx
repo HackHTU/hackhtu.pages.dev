@@ -10,6 +10,9 @@ export const SiteFooter = () => (
             <Link to="/tools/news">学校新闻</Link>
           </li>
           <li>
+            <Link to="/pages/wall">校园树洞墙</Link>
+          </li>
+          <li>
             <Link to="/pages/privacy">隐私政策</Link>
           </li>
           <li>
@@ -24,7 +27,7 @@ export const SiteFooter = () => (
         <p className="text-sm font-semibold">联系</p>
         <ul className="text-muted-foreground mt-3 flex flex-col flex-wrap gap-2 text-sm">
           <li>
-            <Link to="/pages/comment">评论区</Link>
+            <Link to="/pages/comment">意见反馈</Link>
           </li>
           <li>
             <a

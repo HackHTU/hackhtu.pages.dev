@@ -1,11 +1,11 @@
-import type { FoodCategory } from "@hackhtu/contracts";
-import { CrosshairIcon, ForkKnifeIcon, InfoIcon } from "@phosphor-icons/react";
+import type { PlaceCategory } from "@hackhtu/contracts";
+import { CrosshairIcon, InfoIcon, MapPinIcon } from "@phosphor-icons/react";
 
 import { categoryColor } from "./constants";
 import { StarRating } from "./star-rating";
-import type { FoodSpot } from "./types";
+import type { Place } from "./types";
 
-const secondaryText = (spot: FoodSpot): string => {
+const secondaryText = (spot: Place): string => {
   if (spot.address !== null && spot.address.length > 0) {
     return spot.address;
   }
@@ -23,9 +23,9 @@ export const CategoryChips = ({
   active,
   onSelect,
 }: {
-  categories: FoodCategory[];
-  active: FoodCategory | null;
-  onSelect: (category: FoodCategory | null) => void;
+  categories: PlaceCategory[];
+  active: PlaceCategory | null;
+  onSelect: (category: PlaceCategory | null) => void;
 }) => (
   <div className="flex items-center gap-1.5 overflow-x-auto px-3 py-2">
     <button
@@ -112,10 +112,10 @@ export const SpotList = ({
   onFocus,
   onOpenDetail,
 }: {
-  spots: FoodSpot[];
+  spots: Place[];
   loading: boolean;
-  onFocus: (spot: FoodSpot) => void;
-  onOpenDetail: (spot: FoodSpot) => void;
+  onFocus: (spot: Place) => void;
+  onOpenDetail: (spot: Place) => void;
 }) => {
   if (loading) {
     return (
@@ -152,7 +152,7 @@ export const SpotList = ({
                 // oxlint-disable-next-line shadcn/no-inline-styles -- 分类色板是数据驱动的动态颜色
                 style={{ backgroundColor: categoryColor(spot.category) }}
               >
-                <ForkKnifeIcon weight="bold" className="size-5" />
+                <MapPinIcon weight="bold" className="size-5" />
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-sm font-semibold">

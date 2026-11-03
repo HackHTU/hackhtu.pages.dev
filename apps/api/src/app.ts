@@ -5,7 +5,8 @@ import type { Bindings } from "./env";
 import { setLogLevel } from "./log";
 import { classesRoutes } from "./routes/classes";
 import { commentsRoutes } from "./routes/comments";
-import { foodRoutes } from "./routes/food";
+import { placeRoutes } from "./routes/places";
+import { wallRoutes } from "./routes/wall";
 
 const routes = new Hono<{ Bindings: Bindings }>()
   // 日志级别按请求环境取：生产（wrangler.jsonc）info，本地（.dev.vars / .env）debug。
@@ -21,7 +22,10 @@ const routes = new Hono<{ Bindings: Bindings }>()
   .use("*", botGuard)
   .route("/classes", classesRoutes)
   .route("/comments", commentsRoutes)
-  .route("/food", foodRoutes);
+  .route("/places", placeRoutes)
+  // 旧 API 别名：前端迁移期间保留，稳定后删除。
+  .route("/food", placeRoutes)
+  .route("/wall", wallRoutes);
 
 export const app = new Hono<{ Bindings: Bindings }>()
   .route("/", routes)

@@ -17,7 +17,7 @@ export const TurnstileWidget = ({
   action,
   onToken,
 }: {
-  action: "food-spot" | "food-review";
+  action: "place-spot" | "place-review";
   onToken: (token: string | null) => void;
 }) => {
   const siteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY;

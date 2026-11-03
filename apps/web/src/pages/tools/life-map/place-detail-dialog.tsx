@@ -1,3 +1,4 @@
+import { isFoodCategory } from "@hackhtu/contracts";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   ArrowSquareOutIcon,
@@ -18,7 +19,7 @@ import type { ReviewFormValues } from "./payloads";
 import { StarRating } from "./star-rating";
 import { TurnstileWidget } from "./turnstile-widget";
 import { detectLinkPlatform } from "./types";
-import type { FoodReview, FoodSpot } from "./types";
+import type { Place, PlaceReview } from "./types";
 
 const DIMENSIONS = [
   { key: "taste", label: "味道" },
@@ -80,7 +81,7 @@ const DishTags = ({ dishes }: { dishes: string[] }) => {
   );
 };
 
-const dimensionSummary = (review: FoodReview): string | null => {
+const dimensionSummary = (review: PlaceReview): string | null => {
   const parts: string[] = [];
 
   for (const dimension of DIMENSIONS) {
@@ -98,7 +99,7 @@ const dimensionSummary = (review: FoodReview): string | null => {
   return parts.join(" · ");
 };
 
-const ReviewItem = ({ review }: { review: FoodReview }) => {
+const ReviewItem = ({ review }: { review: PlaceReview }) => {
   const summary = dimensionSummary(review);
 
   return (
@@ -124,6 +125,7 @@ const ReviewItem = ({ review }: { review: FoodReview }) => {
 
 const ReviewForm = ({
   spotId,
+  food,
   onSubmit,
   onClose,
   isPending,
@@ -131,6 +133,7 @@ const ReviewForm = ({
   turnstileKey,
 }: {
   spotId: number;
+  food: boolean;
   onSubmit: (spotId: number, values: ReviewFormValues) => void;
   onClose: () => void;
   isPending: boolean;
@@ -196,28 +199,30 @@ const ReviewForm = ({
           ) : null}
         </div>
       </div>
-      {DIMENSIONS.map((dimension) => {
-        const value = { taste, portion, environment }[dimension.key];
+      {food
+        ? DIMENSIONS.map((dimension) => {
+            const value = { taste, portion, environment }[dimension.key];
 
-        const setValue = {
-          taste: setTaste,
-          portion: setPortion,
-          environment: setEnvironment,
-        }[dimension.key];
+            const setValue = {
+              taste: setTaste,
+              portion: setPortion,
+              environment: setEnvironment,
+            }[dimension.key];
 
-        return (
-          <div
-            key={dimension.key}
-            className="border-border/60 flex items-center justify-between gap-3 border-b pb-3"
-          >
-            <span className="text-muted-foreground text-sm">
-              {dimension.label}
-              <span className="text-xs">（选填）</span>
-            </span>
-            <StarRating value={value} onChange={setValue} size="sm" />
-          </div>
-        );
-      })}
+            return (
+              <div
+                key={dimension.key}
+                className="border-border/60 flex items-center justify-between gap-3 border-b pb-3"
+              >
+                <span className="text-muted-foreground text-sm">
+                  {dimension.label}
+                  <span className="text-xs">（选填）</span>
+                </span>
+                <StarRating value={value} onChange={setValue} size="sm" />
+              </div>
+            );
+          })
+        : null}
       <Label htmlFor="review-nickname">
         称呼
         <Input
@@ -241,15 +246,17 @@ const ReviewForm = ({
           {...form.register("body")}
         />
       </Label>
-      <Label htmlFor="review-dishes">
-        推荐菜（选填，多个用「、」隔开）
-        <Input
-          id="review-dishes"
-          className="mt-2"
-          placeholder="例如：铁板鱿鱼"
-          {...form.register("dishesText")}
-        />
-      </Label>
+      {food ? (
+        <Label htmlFor="review-dishes">
+          推荐菜（选填，多个用「、」隔开）
+          <Input
+            id="review-dishes"
+            className="mt-2"
+            placeholder="例如：铁板鱿鱼"
+            {...form.register("dishesText")}
+          />
+        </Label>
+      ) : null}
       <Label htmlFor="review-link">
         外部链接（选填，小红书 / 美团 / 高德等）
         <Input
@@ -261,7 +268,7 @@ const ReviewForm = ({
       </Label>
       <div className="border-border bg-background rounded-xl border p-3">
         <TurnstileWidget
-          action="food-review"
+          action="place-review"
           key={turnstileKey}
           onToken={(token) => {
             form.setValue("turnstileToken", token ?? "", {
@@ -292,7 +299,7 @@ const ReviewsBlock = ({
   reviews,
 }: {
   loading: boolean;
-  reviews: FoodReview[];
+  reviews: PlaceReview[];
 }) => {
   if (loading) {
     return <p className="text-muted-foreground mt-3 text-sm">评价加载中…</p>;
@@ -315,7 +322,7 @@ const ReviewsBlock = ({
   );
 };
 
-export const SpotDetailDialog = ({
+export const PlaceDetailDialog = ({
   spot,
   reviews,
   reviewsLoading,
@@ -325,8 +332,8 @@ export const SpotDetailDialog = ({
   errorMessage,
   turnstileKey,
 }: {
-  spot: FoodSpot;
-  reviews: FoodReview[];
+  spot: Place;
+  reviews: PlaceReview[];
   reviewsLoading: boolean;
   onClose: () => void;
   onSubmitReview: (spotId: number, values: ReviewFormValues) => void;
@@ -335,6 +342,9 @@ export const SpotDetailDialog = ({
   turnstileKey: number;
 }) => {
   const [showReviewForm, setShowReviewForm] = useState(false);
+
+  // 只有美食分类展示「味道 / 分量 / 环境」和推荐菜。
+  const food = isFoodCategory(spot.category);
 
   // portal 到 body：地图页内堆叠层级复杂，弹窗直接与站点头部同级竞争 z-index。
   return createPortal(
@@ -355,7 +365,7 @@ export const SpotDetailDialog = ({
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <p className="text-muted-foreground text-sm font-semibold">
-              美食地图
+              校园生活地图
             </p>
             <h2
               id="spot-detail-heading"
@@ -437,6 +447,7 @@ export const SpotDetailDialog = ({
           {showReviewForm ? (
             <ReviewForm
               spotId={spot.id}
+              food={food}
               onSubmit={onSubmitReview}
               isPending={isPending}
               errorMessage={errorMessage}
