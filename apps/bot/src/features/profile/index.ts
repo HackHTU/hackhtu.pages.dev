@@ -1,3 +1,4 @@
+import type { Database } from "@hackhtu/db";
 import type { Bot } from "grammy";
 import type { Message } from "grammy/types";
 
@@ -5,12 +6,13 @@ import { logWarn } from "../../lib/log";
 import { checkAvatar } from "./avatar";
 
 /**
- * 群消息发送者检查：只查头像。
+ * 群消息发送者检查：只查个人头像。
  *
  * 昵称/用户名违规统一交给 `packages/ai/src/chat/triage.ts` 的 clef 判定。
  */
 export const guardSenderProfile = async (
   bot: Bot,
+  db: Database,
   msg: Message
 ): Promise<void> => {
   const sender = msg.from;
@@ -20,7 +22,7 @@ export const guardSenderProfile = async (
   }
 
   try {
-    await checkAvatar(bot, msg.chat.id, sender);
+    await checkAvatar(bot, db, msg);
   } catch (error) {
     logWarn(
       "profile.avatar.failed",

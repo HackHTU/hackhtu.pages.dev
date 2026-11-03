@@ -12,6 +12,7 @@
     "dev:api": "wrangler pages dev apps/web/public --local --port 8788 --env-file .env",
     "build": "bun run --filter @hackhtu/web build",
     "preview": "bun run build && wrangler pages dev apps/web/dist --local --port 8788",
+    "predeploy": "bun apps/bot/scripts/predeploy.ts",
     "deploy": "bun run build && wrangler pages deploy apps/web/dist",
     "d1:local": "wrangler d1 execute HackHTUDB --local",
     "d1:migrate:local": "wrangler d1 migrations apply HackHTUDB --local",

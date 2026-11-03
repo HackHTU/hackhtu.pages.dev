@@ -11,7 +11,13 @@ import type { Bindings } from "../../env";
 import { handleViolation } from "../../handlers/violation";
 import { logDebug, logError, logInfo, logWarn } from "../../lib/log";
 import { transcribeVoice } from "./media/attachments";
-import { hasContent, hasMedia, senderRole, toChatMessage } from "./message";
+import {
+  hasContent,
+  hasMedia,
+  senderRole,
+  toChatMessage,
+  withModerationContext,
+} from "./message";
 import { replyNow } from "./reply";
 import { isMessageDone, markMessageDone } from "./state";
 
@@ -121,10 +127,10 @@ const gateGroupMessage = async (
   db: Database,
   config: BotConfig,
   msg: Message,
-  rendered: string,
+  candidate: string,
   voice: boolean
 ): Promise<GateResult> => {
-  const triage = await decideTriage(env, db, config, msg, rendered, voice);
+  const triage = await decideTriage(env, db, config, msg, candidate, voice);
 
   if (triage.violation) {
     logInfo("ai.violation", { chatId: msg.chat.id, fromId: msg.from?.id });
@@ -187,6 +193,8 @@ export const handleAiMessage = async (
   const chatMessage = toChatMessage(msg, sender, transcript, role);
 
   const rendered = renderMessage(chatMessage);
+  // 判定候选额外带上引用内容和 inline bot 标记，广告判定才算完整。
+  const candidate = withModerationContext(rendered, msg);
   const isPrivate = msg.chat.type === "private";
   const isVoice = msg.voice !== undefined || msg.audio !== undefined;
 
@@ -202,7 +210,15 @@ export const handleAiMessage = async (
   let gate: GateResult = "reply";
 
   if (!direct && !isPrivate) {
-    gate = await gateGroupMessage(bot, env, db, config, msg, rendered, isVoice);
+    gate = await gateGroupMessage(
+      bot,
+      env,
+      db,
+      config,
+      msg,
+      candidate,
+      isVoice
+    );
   }
 
   if (gate === "violation") {

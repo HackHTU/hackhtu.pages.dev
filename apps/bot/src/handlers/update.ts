@@ -33,7 +33,7 @@ const HELP_TEXT = [
   "- /clean：清空本会话的 AI 聊天记录和摘要（群聊仅管理员可用）",
   "- /soutu：回复图片后使用识图",
   "- 发送带追踪参数的链接会自动回复清理后的内容",
-  "- 群规要求头像：没设置头像会被提醒补充",
+  "- 群规要求头像：没设置头像会在群里提醒，累计三次提醒移出群聊",
   "- 群昵称/用户名和消息一起做违规检测，命中按违规流程处理",
   "- 在群里 @我、回复我的消息，我会直接接话；其他消息我自己判断要不要聊",
   "- 会查天气、读网页/文件、发表情，并记住本群的事",
@@ -171,7 +171,7 @@ const handleGroupMessage = async (
 
   // 资料检查只针对发送者本人，且不能阻塞后续命令/AI 处理。
   try {
-    await guardSenderProfile(bot, msg);
+    await guardSenderProfile(bot, db, msg);
   } catch (error) {
     logWarn("profile.guard.failed", { chatId: msg.chat.id }, error);
   }

@@ -155,7 +155,7 @@ bot 源码在 `apps/bot`，通过 `functions/bot/[[route]].ts` 挂到同一个 P
 **功能**
 
 - 新成员进群立即禁言，发欢迎语和私聊深链；私聊随机抽一道河南师范大学题目，4 个按钮作答。答对解禁，答错或超时后作答会被移出群聊；一直不答保持禁言，管理员可用 `/unban` 解除。
-- 群消息只检查**发送者本人**的头像：没头像直接在群里 `@` 提醒；消息正文和昵称/用户名由同一个 clef 判定一起看，任一违规即走三次警告流程。
+- 群消息只检查**发送者本人**的个人头像：没头像会在群里 `@` 提醒，累计三次提醒移出群聊，通知带「解除警告 / 解除封禁 / 踢出群聊」按钮；消息正文、引用内容和通过 inline 机器人发送的消息，连同昵称/用户名由同一个 clef 判定一起看，任一违规即走三次警告流程。
 - 本地关键词黑名单（博彩、代考、刷单等违规词）命中后删除消息并警告，累计三次封禁。
 - 管理员回复消息后使用 `/ban [分钟]` 禁言、`/banl` 或 `/kick` 踢出、`/unban` 解除。
 - `/soutu` 回复图片识图；带追踪参数的链接自动清理。
@@ -167,7 +167,7 @@ bot 源码在 `apps/bot`，通过 `functions/bot/[[route]].ts` 挂到同一个 P
 - 主模型 `@cf/qwen/qwen3.8-27b`，用 Vercel AI SDK（`ai`）+ `workers-ai-provider` 直接走 `AI` 绑定，不依赖 Workers 专属的 `agents`。
 - 私聊、@机器人、回复机器人直接回复，不再看关键词；其余群消息用 `@cf/cloudflare/clef-flash`（AI SDK `experimental_decide` + decision model 适配器）一次判断两件事：
   - 要不要让奶龙插话（instruction 里带人设，能认出语音转写的同音字写法）；
-  - 是否违规（博彩、病毒/钓鱼、诈骗、刷屏等；广告和 R18 允许，只处置违反法律法规的内容）。违规判定同时看消息正文和发送者的昵称/用户名，任一违规即返回同一个 `violation` 结果。
+  - 是否违规（博彩、病毒/钓鱼、诈骗、刷屏等；广告和 R18 允许，只处置违反法律法规的内容）。违规判定同时看消息正文（含引用内容和 via inline 机器人的消息）和发送者的昵称/用户名，任一违规即返回同一个 `violation` 结果。
 - decision 的 state 是消息数组：历史每条消息一个 part，最后一条带「候选消息」标记的才是判断对象，结合上下文但只判这一条。
 - 违规走三次警告制：前两次删除消息并警告，第 3 次起封禁；通知里用 spoiler 引用原消息内容，并挂「解除警告 / 解除封禁」按钮（仅管理员可用）。
 - 前提是群在白名单里、发送者是真人；私聊只对白名单群成员开放 AI。
@@ -266,6 +266,7 @@ Vite 只构建前端，`functions/` 不会出现在 `apps/web/dist` 里。这是
   # 等价于 bun run build && wrangler pages deploy apps/web/dist
   ```
 
+- `bun run deploy` 会先自动执行 `predeploy`：用 `BOT_TOKEN` 往 `NOTIFY_CHATS` 的群发一条「即将部署」（群 ID 缺省时从 `wrangler.jsonc` 读取）。通知失败只告警、不阻断部署；只看消息不发出去可用 `bun run predeploy -- --dry-run`。
 - Git 集成部署时，Root directory 保持 `/`，构建命令 `bun run build`，输出目录 `apps/web/dist`。
 - `functions/`、`apps/api/`、`apps/bot/`、`wrangler.jsonc` 必须提交到仓库，否则 Cloudflare 拉不到新的 API / bot 代码。
 

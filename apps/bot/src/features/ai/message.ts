@@ -56,6 +56,67 @@ export const hasContent = (
   text.length > 0 ||
   (transcript !== null && transcript !== undefined && transcript.length > 0);
 
+/** 引用内容的正文：优先用户手动引用的一段，否则退回被回复消息的正文。 */
+const quotedText = (msg: Message): string => {
+  const quoted = msg.quote?.text.trim() ?? "";
+
+  if (quoted.length > 0) {
+    return quoted;
+  }
+
+  const replied = msg.reply_to_message;
+
+  return (replied?.text ?? replied?.caption ?? "").trim();
+};
+
+/**
+ * 广告/违规判定要看的全部文本。
+ *
+ * 除了本条正文，还包括引用内容（别人发来的广告被引用/转发）和 via_bot
+ * 标记（借 inline 机器人生成的广告消息）。关键词扫描和模型判定共用这一份。
+ */
+export const moderationText = (msg: Message): string => {
+  const parts: string[] = [];
+  const own = (msg.text ?? msg.caption ?? "").trim();
+
+  if (own.length > 0) {
+    parts.push(own);
+  }
+
+  const quoted = quotedText(msg);
+
+  if (quoted.length > 0) {
+    parts.push(`[引用] ${quoted}`);
+  }
+
+  if (msg.via_bot !== undefined) {
+    parts.push(`[via @${msg.via_bot.username ?? displayNameOf(msg.via_bot)}]`);
+  }
+
+  return parts.join("\n");
+};
+
+/** 给模型判定用的候选消息：在渲染好的聊天记录行后补上引用内容和 inline bot。 */
+export const withModerationContext = (
+  rendered: string,
+  msg: Message
+): string => {
+  const extras: string[] = [];
+  const quoted = quotedText(msg);
+
+  if (quoted.length > 0) {
+    extras.push(`  （被引用消息）${quoted}`);
+  }
+
+  if (msg.via_bot !== undefined) {
+    extras.push(
+      `  （inline 机器人：@${msg.via_bot.username ?? displayNameOf(msg.via_bot)}）`
+    );
+  }
+
+  return extras.length === 0 ? rendered : [rendered, ...extras].join("\n");
+};
+
 /** 被回复消息的发送者；拿不到（已删除/匿名管理员）时返回 undefined。 */
 const replySender = (msg: Message): AiChatMessage["replyTo"] => {
   const from = msg.reply_to_message?.from;

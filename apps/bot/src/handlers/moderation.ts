@@ -7,6 +7,7 @@ import { z } from "zod";
 
 import { BANNED_KEYWORDS } from "../config";
 import type { BotConfig } from "../config";
+import { moderationText } from "../features/ai/message";
 import { logInfo, logWarn } from "../lib/log";
 import {
   adminIds,
@@ -331,7 +332,8 @@ export const moderateMessage = async (
     return false;
   }
 
-  const text = (msg.text ?? msg.caption ?? "").toLowerCase();
+  // 正文之外还要看引用内容和 inline bot 生成的广告消息。
+  const text = moderationText(msg).toLowerCase();
 
   if (text.length === 0) {
     return false;

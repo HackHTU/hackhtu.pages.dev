@@ -1,19 +1,25 @@
 import { displayNameOf } from "@hackhtu/ai";
-import { moderationStrikes } from "@hackhtu/db";
 import type { Database } from "@hackhtu/db";
-import { and, eq, sql } from "drizzle-orm";
-import { InlineKeyboard } from "grammy";
 import type { Bot } from "grammy";
 import type { CallbackQuery, Message } from "grammy/types";
 
 import type { BotConfig } from "../config";
 import { describeMessage } from "../features/ai/message";
 import { logError, logInfo, logWarn } from "../lib/log";
-import { adminIds, banMember, unmuteMember } from "../lib/telegram";
+import {
+  clearStrikes,
+  moderationKeyboard,
+  recordStrike,
+  WARN_LIMIT,
+} from "../lib/strikes";
+import {
+  adminIds,
+  banMember,
+  isAdmin,
+  kickMember,
+  unmuteMember,
+} from "../lib/telegram";
 import { escapeHtml } from "../lib/text";
-
-/** 三次警告制：累计到这个次数才封禁，前两次只删除消息并警告。 */
-export const WARN_LIMIT = 3;
 
 /** 引用正文最长保留多少字，超长截断，避免通知消息刷屏。 */
 const QUOTE_LIMIT = 400;
@@ -31,50 +37,6 @@ const quoteOf = (msg: Message): string => {
 
   return `<tg-spoiler>${escapeHtml(clipped)}</tg-spoiler>`;
 };
-
-/** 违规计数加一，返回累计次数。 */
-const recordStrike = async (
-  db: Database,
-  chatId: number,
-  userId: number
-): Promise<number> => {
-  const rows = await db
-    .insert(moderationStrikes)
-    .values({ chatId, userId, strikes: 1, updatedAt: Date.now() })
-    .onConflictDoUpdate({
-      target: [moderationStrikes.chatId, moderationStrikes.userId],
-      set: {
-        strikes: sql`${moderationStrikes.strikes} + 1`,
-        updatedAt: Date.now(),
-      },
-    })
-    .returning({ strikes: moderationStrikes.strikes });
-
-  return rows[0]?.strikes ?? 1;
-};
-
-/** 违规计数清零（解除警告 / 解除封禁时用）。 */
-const clearStrikes = async (
-  db: Database,
-  chatId: number,
-  userId: number
-): Promise<void> => {
-  await db
-    .update(moderationStrikes)
-    .set({ strikes: 0, updatedAt: Date.now() })
-    .where(
-      and(
-        eq(moderationStrikes.chatId, chatId),
-        eq(moderationStrikes.userId, userId)
-      )
-    );
-};
-
-/** 处置通知里的操作按钮：解除警告随时可按，封禁后多一个解封。 */
-const violationKeyboard = (chatId: number, userId: number): InlineKeyboard =>
-  new InlineKeyboard()
-    .text("解除警告", `mod:clear:${chatId}:${userId}`)
-    .text("解除封禁", `mod:unban:${chatId}:${userId}`);
 
 /** 封禁截止时间的短格式，例如 `11-02 20:15`。 */
 const banUntil = (banSeconds: number): string =>
@@ -117,10 +79,10 @@ export const handleViolation = async (
     logWarn("moderation.delete.failed", { chatId: msg.chat.id }, error);
   }
 
-  const strikes = await recordStrike(db, msg.chat.id, sender.id);
+  const strikes = (await recordStrike(db, msg.chat.id, sender.id)) ?? 1;
   const name = displayNameOf(sender);
   const quote = quoteOf(msg);
-  const keyboard = violationKeyboard(msg.chat.id, sender.id);
+  const keyboard = moderationKeyboard(msg.chat.id, sender.id);
 
   logInfo("moderation.violation", {
     chatId: msg.chat.id,
@@ -167,7 +129,24 @@ export const handleViolation = async (
 
 /** 处置通知按钮的回调数据：`mod:<动作>:<群ID>:<用户ID>`。 */
 const MOD_CALLBACK =
-  /^mod:(?<action>clear|unban):(?<chatId>-?\d+):(?<userId>\d+)$/u;
+  /^mod:(?<action>clear|unban|kick):(?<chatId>-?\d+):(?<userId>\d+)$/u;
+
+/** 每个动作完成后回给点击者的提示。 */
+const answerTextOf = (action: string): string => {
+  switch (action) {
+    case "unban": {
+      return "已解除封禁，警告计数已清零。";
+    }
+
+    case "kick": {
+      return "已移出群聊，警告计数已清零。";
+    }
+
+    default: {
+      return "已解除警告。";
+    }
+  }
+};
 
 const messageIdOf = (query: CallbackQuery): number | null =>
   query.message?.message_id ?? null;
@@ -176,7 +155,8 @@ const messageIdOf = (query: CallbackQuery): number | null =>
  * 处置通知上的按钮回调（仅管理员可用）：
  *
  * - 解除警告：违规计数清零；
- * - 解除封禁：解禁并清零计数，给一次重新来过的机会。
+ * - 解除封禁：解禁并清零计数，给一次重新来过的机会；
+ * - 踢出群聊：把没头像的成员移出群聊并清零计数。
  *
  * 返回 false 表示不是本模块的回调，交给下一个处理器。
  */
@@ -207,12 +187,30 @@ export const handleModerationCallback = async (
     return true;
   }
 
+  if (action === "kick") {
+    if (userId === bot.botInfo.id) {
+      await deny("不能对机器人自己执行这个操作。");
+
+      return true;
+    }
+
+    if (await isAdmin(bot, chatId, userId)) {
+      await deny("不能对管理员执行这个操作。");
+
+      return true;
+    }
+  }
+
   try {
     if (action === "unban") {
       await unmuteMember(bot, chatId, userId);
       await bot.api.unbanChatMember(chatId, userId, {
         only_if_banned: true,
       });
+    }
+
+    if (action === "kick") {
+      await kickMember(bot, chatId, userId);
     }
 
     await clearStrikes(db, chatId, userId);
@@ -226,7 +224,7 @@ export const handleModerationCallback = async (
   logInfo("moderation.callback", { chatId, userId, action });
 
   await bot.api.answerCallbackQuery(query.id, {
-    text: action === "unban" ? "已解除封禁，警告计数已清零。" : "已解除警告。",
+    text: answerTextOf(action),
   });
 
   // 动作完成后撤掉按钮，避免重复点击。
