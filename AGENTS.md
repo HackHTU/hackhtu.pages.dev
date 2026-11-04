@@ -39,6 +39,7 @@ wrangler.jsonc
 
 ## 约定
 
+- 这是 Cloudflare Pages 项目，不是 Cloudflare Workers 项目。
 - 用 `bun` / `bunx`，不装全局依赖。
 - `.env` 会覆盖 `wrangler.jsonc` 里的同名 vars；secrets 不要提交。
 - `functions/`、`apps/api/`、`apps/bot/`、`wrangler.jsonc` 必须提交，否则线上拿不到新代码。
