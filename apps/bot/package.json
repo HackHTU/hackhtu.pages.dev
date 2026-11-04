@@ -11,7 +11,6 @@
     "poll:local": "bun --env-file ../../.env scripts/poll.ts --url http://localhost:8788"
   },
   "dependencies": {
-    "@grammyjs/auto-retry": "catalog:",
     "@grammyjs/stream": "catalog:",
     "@hackhtu/ai": "workspace:*",
     "@hackhtu/db": "workspace:*",

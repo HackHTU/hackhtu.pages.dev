@@ -1,5 +1,4 @@
-import { autoRetry } from "@grammyjs/auto-retry";
-import { Bot } from "grammy";
+import { Bot, HttpError } from "grammy";
 import type { ChatMember, ChatPermissions } from "grammy/types";
 
 import { logDebug, logError, logInfo, logWarn } from "./log";
@@ -7,6 +6,54 @@ import { logDebug, logError, logInfo, logWarn } from "./log";
 const botCache = new Map<string, Promise<Bot>>();
 
 const adminCache = new Map<string, { expiresAt: number; ids: Set<number> }>();
+
+/** 429 / 5xx 最多重试 3 次，单次等待不超过 60 秒。 */
+const MAX_RETRY_ATTEMPTS = 3;
+const MAX_RETRY_DELAY_MS = 60_000;
+
+/** 429 用 Telegram 给的 retry_after，其余按 1s、2s、4s 退避。 */
+const retryDelay = (
+  retryAfterSeconds: number | undefined,
+  attempt: number
+): number =>
+  Math.min(
+    MAX_RETRY_DELAY_MS,
+    retryAfterSeconds === undefined
+      ? 1000 * 2 ** attempt
+      : retryAfterSeconds * 1000
+  );
+
+/** grammY 用的是 abort-controller 的 AbortSignal，这里只用到这两个成员。 */
+interface AbortSignalLike {
+  aborted: boolean;
+  addEventListener: (
+    type: "abort",
+    listener: () => void,
+    options?: { once?: boolean }
+  ) => void;
+}
+
+const sleep = async (ms: number, signal?: AbortSignalLike): Promise<void> => {
+  // oxlint-disable-next-line promise/avoid-new -- 原生定时器没有 promise 版本
+  await new Promise<void>((resolve, reject) => {
+    if (signal?.aborted === true) {
+      reject(new Error("请求已取消"));
+
+      return;
+    }
+
+    const timer = setTimeout(resolve, ms);
+
+    signal?.addEventListener(
+      "abort",
+      () => {
+        clearTimeout(timer);
+        reject(new Error("请求已取消"));
+      },
+      { once: true }
+    );
+  });
+};
 
 const denied: ChatPermissions = {
   can_send_messages: false,
@@ -81,8 +128,55 @@ export const getBot = async (token: string): Promise<Bot> => {
     }
   });
 
-  // 流式编辑和群发都可能撞上 429，自动重试比手写 sleep 稳。
-  bot.api.config.use(autoRetry({ maxRetryAttempts: 3 }));
+  // 流式编辑和群发都可能撞上 429 / 5xx，自动重试。
+  //
+  // 不用 @grammyjs/auto-retry：它依赖 debug，而 Pages 的 Git 构建用旧
+  // unenv 把 debug 换成没有 .debug 的 shim，Functions 发布会直接失败。
+  bot.api.config.use(async (prev, method, payload, signal) => {
+    for (let attempt = 0; ; attempt += 1) {
+      try {
+        // oxlint-disable-next-line no-await-in-loop -- 重试必须等上一次调用结束
+        const result = await prev(method, payload, signal);
+
+        if (result.ok) {
+          return result;
+        }
+
+        const retriable = result.error_code === 429 || result.error_code >= 500;
+
+        if (!retriable || attempt >= MAX_RETRY_ATTEMPTS) {
+          return result;
+        }
+
+        const delay = retryDelay(result.parameters?.retry_after, attempt);
+
+        logWarn("telegram.retry", {
+          method,
+          attempt: attempt + 1,
+          delayMs: delay,
+          code: result.error_code,
+        });
+
+        // oxlint-disable-next-line no-await-in-loop -- 重试必须先等待退避时间
+        await sleep(delay, signal);
+      } catch (error) {
+        if (!(error instanceof HttpError) || attempt >= MAX_RETRY_ATTEMPTS) {
+          throw error;
+        }
+
+        const delay = retryDelay(undefined, attempt);
+
+        logWarn(
+          "telegram.retry",
+          { method, attempt: attempt + 1, delayMs: delay },
+          error
+        );
+
+        // oxlint-disable-next-line no-await-in-loop -- 重试必须先等待退避时间
+        await sleep(delay, signal);
+      }
+    }
+  });
 
   const ready = (async (): Promise<Bot> => {
     try {

@@ -35,7 +35,6 @@
     "apps/bot": {
       "name": "@hackhtu/bot",
       "dependencies": {
-        "@grammyjs/auto-retry": "catalog:",
         "@grammyjs/stream": "catalog:",
         "@hackhtu/ai": "workspace:*",
         "@hackhtu/db": "workspace:*",
@@ -119,7 +118,6 @@
   "catalog": {
     "@ai-sdk/provider": "^4.0.34",
     "@cloudflare/workers-types": "^5.20261029.1",
-    "@grammyjs/auto-retry": "^2.0.2",
     "@grammyjs/stream": "^1.1.0",
     "@hono/zod-validator": "^0.7.4",
     "@hookform/resolvers": "^5.2.2",
@@ -459,8 +457,6 @@
     "@floating-ui/react-dom": ["@floating-ui/react-dom@2.1.9", "", { "dependencies": { "@floating-ui/dom": "^1.8.0" }, "peerDependencies": { "react": ">=16.8.0", "react-dom": ">=16.8.0" } }, "sha512-JDjEFGCpImxDCA7JJKviA0M9+RtmJdj0m/NVU5IMgBK+AmZouAQQ7/+2GLH0GXXY0YMw9oXPB8hKdbPYg5QLYg=="],
 
     "@floating-ui/utils": ["@floating-ui/utils@0.2.12", "", {}, "sha512-HpCo8tmWzLVad5s2d19EhAz5zqrrQ6s69qd6moPMQvkOuSwDT1YgRfWSVuc4ennqrgv3OHppiOGMQ7oC13yIww=="],
-
-    "@grammyjs/auto-retry": ["@grammyjs/auto-retry@2.0.2", "", { "dependencies": { "debug": "^4.3.4" }, "peerDependencies": { "grammy": "^1.10.0" } }, "sha512-b4A4p5jlYDiQtW0c0FXYe11WMkYoiW+5rvOaDMCOk1h7Pu2SDl7B7gmFF8cthWCx2+M2nWLOsBxAgbBG4kKWYg=="],
 
     "@grammyjs/stream": ["@grammyjs/stream@1.1.0", "", { "dependencies": { "abort-controller": "^3.0.0" }, "peerDependencies": { "grammy": "^1.39.0" } }, "sha512-xaVjR5dg68Ef/my0O0gSB57OxZObdmfTd0WsjkVVP1NjW02RAkR7LNCA0QwZQSO++R5CHPdDcmOrG+JVkJguRQ=="],
 
