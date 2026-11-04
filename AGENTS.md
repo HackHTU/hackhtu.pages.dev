@@ -75,3 +75,5 @@ bunx wrangler d1 migrations apply HackHTUDB --remote
 | Root directory | `/`             |
 
 Vite 只构建静态资源，`functions/` 由 Wrangler 单独打包。`predeploy` 用 `BOT_TOKEN` 发群通知，失败只告警；`bun run predeploy -- --dry-run` 可只预览。
+
+`VITE_*` 是构建期变量，写在根目录 `.env.production`（只能放公开值）。Cloudflare Pages 的 Git 构建不会注入面板里的 `VITE_*`，缺 `VITE_TURNSTILE_SITE_KEY` 时构建会直接报错。
