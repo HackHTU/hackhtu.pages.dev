@@ -8,7 +8,8 @@
 2. `bun run typecheck`
 3. `git commit`
 4. `git push origin main`
-5. `bun run deploy`
+
+仓库已连接 Cloudflare Pages：push 到 `main` 会自动触发构建和部署。需要手动兜底时再执行 `bun run deploy`。
 
 `deploy` 直接用工作区构建，未提交会让 Cloudflare 面板的 Source 落后；`predeploy` 还会往群里发「即将部署」通知。部署必须在仓库根目录执行，否则找不到 `functions/`。
 
