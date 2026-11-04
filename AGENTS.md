@@ -44,6 +44,7 @@ wrangler.jsonc
 - 用 `bun` / `bunx`，不装全局依赖。
 - `.env` 会覆盖 `wrangler.jsonc` 里的同名 vars；secrets 不要提交。
 - `functions/`、`apps/api/`、`apps/bot/`、`wrangler.jsonc` 必须提交，否则线上拿不到新代码。
+- `old` 分支保留旧仓库 `Niapya/HackHTU` 的历史（截至 `870dd36`），不参与构建，Pages 预览已排除该分支。
 
 ## 数据
 
