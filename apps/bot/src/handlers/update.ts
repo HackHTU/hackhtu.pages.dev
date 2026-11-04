@@ -19,6 +19,7 @@ import {
   handlePrivateText,
   handleVerificationCallback,
 } from "./verification";
+import { handleChatMemberUpdate } from "./verification-join";
 import { handleModerationCallback } from "./violation";
 
 const HELP_TEXT = [
@@ -223,6 +224,27 @@ export const handleUpdate = async (
     return;
   }
 
+  // 大群的加入事件走 chat_member；message.new_chat_members 在小群仍然有效。
+  if (update.chat_member !== undefined) {
+    const {
+      chat,
+      old_chat_member: previous,
+      new_chat_member: next,
+    } = update.chat_member;
+
+    logInfo("update.chat_member", {
+      updateId: update.update_id,
+      chatId: chat.id,
+      userId: next.user.id,
+      fromStatus: previous.status,
+      toStatus: next.status,
+    });
+
+    await handleChatMemberUpdate(bot, db, config, update.chat_member);
+
+    return;
+  }
+
   const msg = update.message;
 
   if (msg === undefined) {
@@ -268,7 +290,7 @@ export const handleUpdate = async (
       count: newMembers.length,
     });
 
-    await handleNewMembers(bot, db, config, msg);
+    await handleNewMembers(bot, db, config, msg.chat.id, newMembers);
 
     return;
   }

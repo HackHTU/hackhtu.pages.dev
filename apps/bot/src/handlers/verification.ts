@@ -14,6 +14,7 @@ import {
   createToken,
   createVerification,
   getPendingVerificationByUser,
+  getRecentPendingVerification,
   getVerification,
   setVerificationStatus,
 } from "./verification-store";
@@ -52,20 +53,42 @@ const verifyExpired = (row: VerificationRow): boolean =>
   Date.now() > row.expiresAt;
 
 /**
+ * 双入口去重窗口。
+ *
+ * 同一次加入的两个 update 几乎同时到达，窗口只需要覆盖这个瞬间；
+ * 放太大会误伤「退群后马上重新加入」的人，让他们跳过验证。
+ */
+const JOIN_DEDUPE_MS = 10 * 1000;
+
+/**
  * 新成员进群：立刻禁言，发欢迎语 + 私聊验证深链。
+ * 大群走 `chat_member`，小群走 `message.new_chat_members`，两个入口都收敛到这里。
  */
 export const handleNewMembers = async (
   bot: Bot,
   db: Database,
   config: BotConfig,
-  msg: Message
+  chatId: number,
+  members: User[]
 ): Promise<void> => {
-  const members = msg.new_chat_members ?? [];
-  const chatId = msg.chat.id;
-
   // 顺序处理新成员，避免同一群聊的消息触发 Telegram 频率限制。
   for (const member of members) {
     if (member.is_bot || member.id === bot.botInfo.id) {
+      continue;
+    }
+
+    // 同一次加入可能同时触发 message.new_chat_members 和 chat_member。
+    // oxlint-disable-next-line no-await-in-loop, react-doctor/async-await-in-loop -- 逐个成员去重查询
+    const duplicate = await getRecentPendingVerification(
+      db,
+      chatId,
+      member.id,
+      Date.now() - JOIN_DEDUPE_MS
+    );
+
+    if (duplicate !== null) {
+      logInfo("verification.join.duplicate", { chatId, userId: member.id });
+
       continue;
     }
 

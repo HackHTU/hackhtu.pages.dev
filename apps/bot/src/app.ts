@@ -36,6 +36,10 @@ const kindOfUpdate = (update: Update): string => {
     return "callback_query";
   }
 
+  if (update.chat_member !== undefined) {
+    return "chat_member";
+  }
+
   if (update.message !== undefined) {
     return "message";
   }
@@ -45,8 +49,15 @@ const kindOfUpdate = (update: Update): string => {
 
 /** 一条 update 的关键信息，用于串起同一会话的日志。 */
 const describeUpdate = (update: Update): LogFields => {
-  const chat = update.message?.chat ?? update.callback_query?.message?.chat;
-  const from = update.message?.from ?? update.callback_query?.from;
+  const chat =
+    update.message?.chat ??
+    update.callback_query?.message?.chat ??
+    update.chat_member?.chat;
+
+  const from =
+    update.message?.from ??
+    update.callback_query?.from ??
+    update.chat_member?.from;
 
   return {
     updateId: update.update_id,
@@ -95,8 +106,10 @@ app.get("/bot/setup", async (c) => {
 
   await bot.api.setWebhook(url, {
     secret_token: WEBHOOK_SECRET,
-    allowed_updates: ["message", "callback_query"],
-    drop_pending_updates: true,
+    // 大群的加入事件走 chat_member，必须一起订阅。
+    allowed_updates: ["message", "callback_query", "chat_member"],
+    // 保留部署期间排队的更新，避免丢掉加群事件。
+    drop_pending_updates: false,
   });
 
   return c.json({ ok: true, url });

@@ -1,6 +1,6 @@
 import { autoRetry } from "@grammyjs/auto-retry";
 import { Bot } from "grammy";
-import type { ChatPermissions } from "grammy/types";
+import type { ChatMember, ChatPermissions } from "grammy/types";
 
 import { logDebug, logError, logInfo, logWarn } from "./log";
 
@@ -142,6 +142,13 @@ export const isAdmin = async (
 
   return admins?.has(userId) === true;
 };
+
+/** 成员状态是否算「已经在群里」；restricted 还要看 is_member。 */
+export const isMemberStatus = (member: ChatMember): boolean =>
+  member.status === "member" ||
+  member.status === "administrator" ||
+  member.status === "creator" ||
+  (member.status === "restricted" && member.is_member);
 
 /** 私聊能否使用 AI 的判定缓存：用户 ID → 是否在任一白名单群。 */
 const memberCache = new Map<string, { expiresAt: number; member: boolean }>();

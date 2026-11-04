@@ -37,19 +37,33 @@ const call = async (
   method: string,
   body: TelegramBody
 ): Promise<z.infer<typeof telegramResponse>> => {
-  const response = await fetch(
-    `https://api.telegram.org/bot${token}/${method}`,
-    {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(body),
-      signal: AbortSignal.timeout(45_000),
+  try {
+    const response = await fetch(
+      `https://api.telegram.org/bot${token}/${method}`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(45_000),
+      }
+    );
+
+    const parsed = telegramResponse.safeParse(await response.json());
+
+    if (!parsed.success) {
+      return {
+        ok: false,
+        description: `Telegram 返回了无法解析的响应（HTTP ${response.status}）`,
+      };
     }
-  );
 
-  const parsed = telegramResponse.safeParse(await response.json());
-
-  return parsed.success ? parsed.data : { ok: false };
+    return parsed.data;
+  } catch (error) {
+    return {
+      ok: false,
+      description: error instanceof Error ? error.message : String(error),
+    };
+  }
 };
 
 // getUpdates 和 webhook 互斥，先删掉 webhook。
@@ -79,7 +93,7 @@ while (running) {
     const response = await call("getUpdates", {
       offset,
       timeout: 30,
-      allowed_updates: ["message", "callback_query"],
+      allowed_updates: ["message", "callback_query", "chat_member"],
     });
 
     if (!response.ok) {

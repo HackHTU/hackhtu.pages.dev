@@ -64,6 +64,38 @@ export const expireStaleVerifications = async (
     );
 };
 
+/**
+ * 查同一个群、同一个用户最近是否已经有一条 pending 验证。
+ *
+ * 同一次加入可能同时以 `message.new_chat_members` 和 `chat_member` 到达；
+ * 只靠 `createVerification` 的 supersede 会留下两条群消息，旧按钮失效。
+ * 两个入口在创建前都查一次，第二份直接跳过。
+ *
+ * 被踢出的用户状态已不是 pending，重新加入时会正常建新验证。
+ */
+export const getRecentPendingVerification = async (
+  db: Database,
+  chatId: number,
+  userId: number,
+  since: number
+): Promise<VerificationRow | null> => {
+  const [row] = await db
+    .select()
+    .from(verifications)
+    .where(
+      and(
+        eq(verifications.chatId, chatId),
+        eq(verifications.userId, userId),
+        eq(verifications.status, "pending"),
+        gt(verifications.createdAt, since)
+      )
+    )
+    .orderBy(desc(verifications.createdAt))
+    .limit(1);
+
+  return row ?? null;
+};
+
 export const createVerification = async (
   db: Database,
   input: NewVerification

@@ -53,6 +53,13 @@ const handleAdminAction = async (
     return;
   }
 
+  // 按钮对全群可见，回调必须来自这条验证所在的群，避免跨群/私聊伪造。
+  if (query.message?.chat.id !== row.chatId) {
+    await answer("这条验证不属于当前群聊。", true);
+
+    return;
+  }
+
   if (!(await isAdmin(bot, row.chatId, query.from.id))) {
     await answer("只有群管理员可以操作。", true);
 
