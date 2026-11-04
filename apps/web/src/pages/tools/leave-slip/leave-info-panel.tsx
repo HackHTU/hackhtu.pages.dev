@@ -13,6 +13,7 @@ import {
   PERSONAL_LEAVE_TYPES,
   SICK_LEAVE_TYPES,
 } from "./data";
+import { DateTimeField } from "./date-time-field";
 import { FieldGuideMenu, FieldLabel } from "./field-guide";
 
 export const LeaveInfoPanel = ({
@@ -193,12 +194,11 @@ export const LeaveInfoPanel = ({
         <FieldLabel field="startTime" htmlFor="startTime" variant="leave">
           开始时间
         </FieldLabel>
-        <Input
+        <DateTimeField
           id="startTime"
-          type="datetime-local"
           value={sessionData.startTime}
-          onChange={(e) => {
-            setSession({ startTime: e.target.value });
+          onChange={(value) => {
+            setSession({ startTime: value });
           }}
         />
       </div>
@@ -206,12 +206,11 @@ export const LeaveInfoPanel = ({
         <FieldLabel field="endTime" htmlFor="endTime" variant="leave">
           结束时间
         </FieldLabel>
-        <Input
+        <DateTimeField
           id="endTime"
-          type="datetime-local"
           value={sessionData.endTime}
-          onChange={(e) => {
-            setSession({ endTime: e.target.value });
+          onChange={(value) => {
+            setSession({ endTime: value });
           }}
         />
       </div>
@@ -249,12 +248,11 @@ export const LeaveInfoPanel = ({
         <FieldLabel field="approveTime" htmlFor="approvetime" variant="leave">
           审批时间
         </FieldLabel>
-        <Input
+        <DateTimeField
           id="approvetime"
-          type="datetime-local"
           value={sessionData.approvetime}
-          onChange={(e) => {
-            setSession({ approvetime: e.target.value });
+          onChange={(value) => {
+            setSession({ approvetime: value });
           }}
         />
       </div>
@@ -262,12 +260,11 @@ export const LeaveInfoPanel = ({
         <FieldLabel field="submitTime" htmlFor="submitTime" variant="leave">
           提交时间
         </FieldLabel>
-        <Input
+        <DateTimeField
           id="submitTime"
-          type="datetime-local"
           value={sessionData.submitTime}
-          onChange={(e) => {
-            setSession({ submitTime: e.target.value });
+          onChange={(value) => {
+            setSession({ submitTime: value });
           }}
         />
       </div>
@@ -275,12 +272,11 @@ export const LeaveInfoPanel = ({
         <FieldLabel field="reviewTime" htmlFor="reviewTime" variant="leave">
           审核时间
         </FieldLabel>
-        <Input
+        <DateTimeField
           id="reviewTime"
-          type="datetime-local"
           value={sessionData.reviewTime}
-          onChange={(e) => {
-            setSession({ reviewTime: e.target.value });
+          onChange={(value) => {
+            setSession({ reviewTime: value });
           }}
         />
       </div>
