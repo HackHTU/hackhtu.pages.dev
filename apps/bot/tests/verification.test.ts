@@ -202,11 +202,13 @@ checks.test("答错无需等待超时即可移出，再次加入可以重新验�
   checks
     .expect(await removeUnverifiedMember(bot, db, row, "failed"))
     .toBe(true);
+
   const next = {
     ...input,
     token: "b".repeat(32),
     expiresAt: Date.now() + 120_000,
   };
+
   await createVerification(db, next);
   await sweepExpiredVerifications(bot, db);
   checks.expect(removed).toEqual([123]);

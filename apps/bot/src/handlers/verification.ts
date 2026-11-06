@@ -127,13 +127,9 @@ export const handleNewMembers = async (
     });
 
     try {
+      // 验证禁言不自动到期，避免清扫异常时未验证成员恢复发言。
       // oxlint-disable-next-line no-await-in-loop -- 逐个禁言新成员
-      await muteMember(
-        bot,
-        chatId,
-        member.id,
-        Math.floor((expiresAt + 60 * 60 * 1000) / 1000)
-      );
+      await muteMember(bot, chatId, member.id);
     } catch (error) {
       logWarn("verification.mute.failed", { chatId, userId: member.id }, error);
       // oxlint-disable-next-line no-await-in-loop -- 顺序提示权限问题
