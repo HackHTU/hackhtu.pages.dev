@@ -1,12 +1,12 @@
 import { pruneHistory } from "@hackhtu/ai";
 import { botMeta, rssHistory, verifications } from "@hackhtu/db";
 import type { Database } from "@hackhtu/db";
-import { and, eq, isNotNull, like, lt, sql } from "drizzle-orm";
+import { and, eq, isNotNull, like, lt, notInArray, sql } from "drizzle-orm";
 import type { Bot } from "grammy";
 import Parser from "rss-parser";
 
 import type { BotConfig } from "../config";
-import { expireStaleVerifications } from "../handlers/verification";
+import { sweepExpiredVerifications } from "../handlers/verification-sweep";
 import { logError, logInfo, logWarn } from "../lib/log";
 import { escapeHtml, stripHtml } from "../lib/text";
 import { pruneDoneMarkers } from "./ai/state";
@@ -97,6 +97,7 @@ const pruneVerifications = async (
     .where(
       and(
         isNotNull(verifications.resolvedAt),
+        notInArray(verifications.status, ["pending", "removing"]),
         lt(verifications.resolvedAt, before)
       )
     );
@@ -218,7 +219,7 @@ export const checkRssFeeds = async (
 };
 
 /**
- * 由 webhook 触发的机会式 RSS 检查。
+ * 由 webhook 触发的机会式维护：验证清扫每分钟，RSS 每十分钟。
  *
  * 用 bot_meta 做 10 分钟节流，避免每条消息都抓一遍 RSS；
  * 调用方应把它放进 ctx.waitUntil，不阻塞 webhook 响应。
@@ -229,6 +230,22 @@ export const maybeCheckRss = async (
   config: BotConfig
 ): Promise<void> => {
   const now = Date.now();
+
+  try {
+    if (
+      await claimMetaOnce(
+        db,
+        "verification:last_sweep",
+        String(now),
+        now,
+        now - 60_000
+      )
+    ) {
+      await sweepExpiredVerifications(bot, db);
+    }
+  } catch (error) {
+    logError("verification.sweep.failed", error);
+  }
 
   const claimed = await claimMetaOnce(
     db,
@@ -243,7 +260,6 @@ export const maybeCheckRss = async (
   }
 
   await pruneVerifications(db, now - 7 * 24 * 60 * 60 * 1000);
-  await expireStaleVerifications(db, now);
   await pruneRssHistory(db, now - 90 * 24 * 60 * 60 * 1000);
   await pruneRateLimits(db, now - 24 * 60 * 60 * 1000);
   await pruneDoneMarkers(db, now);

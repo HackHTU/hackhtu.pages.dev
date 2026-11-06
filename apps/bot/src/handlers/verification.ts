@@ -7,7 +7,7 @@ import type { BotConfig } from "../config";
 import { optionsForToken, pickQuestion, QUESTIONS } from "../config/questions";
 import type { VerificationQuestion } from "../config/questions";
 import { logInfo, logWarn } from "../lib/log";
-import { kickMember, muteMember, unmuteMember } from "../lib/telegram";
+import { isAdmin, muteMember, unmuteMember } from "../lib/telegram";
 import { handleVerificationAdminCallback } from "./verification-admin";
 import { displayName, mention } from "./verification-shared";
 import {
@@ -19,8 +19,7 @@ import {
   setVerificationStatus,
 } from "./verification-store";
 import type { VerificationRow } from "./verification-store";
-
-export { expireStaleVerifications } from "./verification-store";
+import { removeUnverifiedMember } from "./verification-sweep";
 
 const usernameOf = (bot: Bot, config: BotConfig): string =>
   bot.botInfo.username ?? config.botUsername.replace(/^@/u, "");
@@ -77,6 +76,12 @@ export const handleNewMembers = async (
       continue;
     }
 
+    // 服务消息入口也可能包含管理员，不能只在 chat_member 入口过滤。
+    // oxlint-disable-next-line no-await-in-loop, react-doctor/async-await-in-loop -- 按成员检查管理员身份
+    if (await isAdmin(bot, chatId, member.id)) {
+      continue;
+    }
+
     // 同一次加入可能同时触发 message.new_chat_members 和 chat_member。
     // oxlint-disable-next-line no-await-in-loop, react-doctor/async-await-in-loop -- 逐个成员去重查询
     const duplicate = await getRecentPendingVerification(
@@ -101,6 +106,7 @@ export const handleNewMembers = async (
     );
 
     const createdAt = Date.now();
+    const expiresAt = createdAt + config.verifyTimeoutMs;
 
     logInfo("verification.created", {
       chatId,
@@ -117,18 +123,23 @@ export const handleNewMembers = async (
       questionId: question.id,
       answerIndex,
       createdAt,
-      expiresAt: createdAt + config.verifyTimeoutMs,
+      expiresAt,
     });
 
     try {
       // oxlint-disable-next-line no-await-in-loop -- 逐个禁言新成员
-      await muteMember(bot, chatId, member.id);
+      await muteMember(
+        bot,
+        chatId,
+        member.id,
+        Math.floor((expiresAt + 60 * 60 * 1000) / 1000)
+      );
     } catch (error) {
       logWarn("verification.mute.failed", { chatId, userId: member.id }, error);
       // oxlint-disable-next-line no-await-in-loop -- 顺序提示权限问题
       await bot.api.sendMessage(
         chatId,
-        "机器人缺少「限制成员」权限，无法禁言新成员，请管理员检查机器人权限。"
+        "新成员禁言失败，请管理员检查机器人权限和网络；验证仍需完成。"
       );
     }
 
@@ -143,7 +154,7 @@ export const handleNewMembers = async (
       "2. 回答一道河南师范大学相关的问题",
       "3. 答对后自动恢复发言",
       "",
-      `请在 ${seconds} 秒内完成。答错或超时后作答会被移出群聊；一直不答将保持禁言。`,
+      `请在 ${seconds} 秒内完成。答错或超时未验证会被移出群聊（不是封禁），可重新加入再验证。`,
       "管理员也可以直接点下方「解禁」或「踢出」。",
     ].join("\n");
 
@@ -204,16 +215,19 @@ export const handlePrivateStart = async (
   if (row.status !== "pending") {
     await bot.api.sendMessage(
       msg.chat.id,
-      "这条验证已失效。如果仍被禁言，请联系群管理员解禁。"
+      "这条验证已失效。若因验证失败被移出群聊，可以重新加入再验证；若仍被禁言，请联系群管理员。"
     );
 
     return;
   }
 
   if (verifyExpired(row)) {
+    const removed = await removeUnverifiedMember(bot, db, row, "expired");
     await bot.api.sendMessage(
       msg.chat.id,
-      "验证已超时。你目前仍处于禁言状态，请联系群管理员解禁；如果继续作答会被移出群聊。"
+      removed
+        ? "验证已超时，你已被移出群聊，可以重新加入再验证。"
+        : "验证已超时，将自动移出群聊；若未移出，请联系群管理员。重新加入可以再验证。"
     );
 
     return;
@@ -313,41 +327,12 @@ export const handleVerificationCallback = async (
   });
 
   if (verifyExpired(row)) {
-    const claimed = await setVerificationStatus(
-      db,
-      token,
-      "expired",
-      Date.now()
-    );
-
-    if (!claimed) {
-      await bot.api.answerCallbackQuery(query.id, {
-        text: "这条验证已经处理过了。",
-        show_alert: false,
-      });
-
-      return;
-    }
-
-    logInfo("verification.expired", { chatId: row.chatId, userId: row.userId });
-
-    try {
-      await kickMember(bot, row.chatId, row.userId);
-      await bot.api.sendMessage(
-        row.chatId,
-        `${mention(row.userId, name)} 的验证已超时，已被移出群聊。`,
-        { parse_mode: "HTML" }
-      );
-    } catch (error) {
-      logWarn(
-        "verification.expired.kick.failed",
-        { chatId: row.chatId },
-        error
-      );
-    }
+    const removed = await removeUnverifiedMember(bot, db, row, "expired");
 
     await bot.api.answerCallbackQuery(query.id, {
-      text: "验证已超时，你已被移出群聊。",
+      text: removed
+        ? "验证已超时，已移出群聊，可重新加入再验证。"
+        : "验证已超时。若尚未移出，机器人会重试，也可联系管理员。",
       show_alert: true,
     });
 
@@ -392,32 +377,12 @@ export const handleVerificationCallback = async (
     return;
   }
 
-  const claimed = await setVerificationStatus(db, token, "failed", Date.now());
-
-  if (!claimed) {
-    await bot.api.answerCallbackQuery(query.id, {
-      text: "这条验证已经处理过了。",
-      show_alert: false,
-    });
-
-    return;
-  }
-
-  logInfo("verification.failed", { chatId: row.chatId, userId: row.userId });
-
-  try {
-    await kickMember(bot, row.chatId, row.userId);
-    await bot.api.sendMessage(
-      row.chatId,
-      `${mention(row.userId, name)} 验证答错，已被移出群聊。`,
-      { parse_mode: "HTML" }
-    );
-  } catch (error) {
-    logWarn("verification.failed.kick.failed", { chatId: row.chatId }, error);
-  }
+  const removed = await removeUnverifiedMember(bot, db, row, "failed");
 
   await bot.api.answerCallbackQuery(query.id, {
-    text: "答案错误，你已被移出群聊。",
+    text: removed
+      ? "答案错误，已移出群聊，可重新加入再验证。"
+      : "答案错误。若尚未移出，机器人会重试，也可联系管理员。",
     show_alert: true,
   });
 };
@@ -444,32 +409,16 @@ export const handlePrivateText = async (
     return false;
   }
 
-  const name = displayName(sender);
-
   if (verifyExpired(row)) {
-    const claimed = await setVerificationStatus(
-      db,
-      row.token,
-      "expired",
-      Date.now()
+    const removed = await removeUnverifiedMember(bot, db, row, "expired");
+    await bot.api.sendMessage(
+      msg.chat.id,
+      removed
+        ? "验证已超时，已移出群聊，可重新加入再验证。"
+        : "验证已超时。若尚未移出，机器人会重试，也可联系管理员。"
     );
 
-    if (claimed) {
-      try {
-        await kickMember(bot, row.chatId, row.userId);
-        await bot.api.sendMessage(
-          row.chatId,
-          `${mention(row.userId, name)} 超时后继续作答，已被移出群聊。`,
-          { parse_mode: "HTML" }
-        );
-      } catch (error) {
-        logWarn("verification.late.kick.failed", { chatId: row.chatId }, error);
-      }
-
-      await bot.api.sendMessage(msg.chat.id, "验证已超时，你已被移出群聊。");
-
-      return true;
-    }
+    return true;
   }
 
   await bot.api.sendMessage(

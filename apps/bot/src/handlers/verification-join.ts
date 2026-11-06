@@ -7,6 +7,7 @@ import type { BotConfig } from "../config";
 import { logInfo } from "../lib/log";
 import { isMemberStatus } from "../lib/telegram";
 import { handleNewMembers } from "./verification";
+import { cancelPendingVerification } from "./verification-store";
 
 /** `chat_member` 更新：大群的加入事件，只认「不在群里 → 在群里」。 */
 export const handleChatMemberUpdate = async (
@@ -27,7 +28,19 @@ export const handleChatMemberUpdate = async (
     return;
   }
 
-  if (isMemberStatus(update.old_chat_member) || !isMemberStatus(member)) {
+  if (!isMemberStatus(member)) {
+    await cancelPendingVerification(db, chat.id, member.user.id, "left");
+
+    return;
+  }
+
+  if (member.status === "administrator" || member.status === "creator") {
+    await cancelPendingVerification(db, chat.id, member.user.id, "manual");
+
+    return;
+  }
+
+  if (isMemberStatus(update.old_chat_member)) {
     return;
   }
 

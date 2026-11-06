@@ -1,13 +1,13 @@
 import { verifications } from "@hackhtu/db";
 import type { Database } from "@hackhtu/db";
-import { and, desc, eq, gt, lt } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, lt, or } from "drizzle-orm";
 
 export type VerificationRow = typeof verifications.$inferSelect;
 
 export type NewVerification = typeof verifications.$inferInsert;
 
-/** 超时多久之后，pending 行不再影响私聊（先置 expired 再丢弃）。 */
-const STALE_PENDING_MS = 24 * 60 * 60 * 1000;
+/** 崩溃后允许后续清扫重试尚未完成的移出操作。 */
+const REMOVAL_LEASE_MS = 2 * 60 * 1000;
 
 export const getVerification = async (
   db: Database,
@@ -30,12 +30,7 @@ export const getPendingVerificationByUser = async (
     .select()
     .from(verifications)
     .where(
-      and(
-        eq(verifications.userId, userId),
-        eq(verifications.status, "pending"),
-        // 太老的 pending 不再拦截私聊（下面会被置为 expired）。
-        gt(verifications.expiresAt, Date.now() - STALE_PENDING_MS)
-      )
+      and(eq(verifications.userId, userId), eq(verifications.status, "pending"))
     )
     .orderBy(desc(verifications.createdAt))
     .limit(1);
@@ -43,23 +38,86 @@ export const getPendingVerificationByUser = async (
   return row ?? null;
 };
 
-/**
- * 把长期没作答的 pending 行收成 expired。
- *
- * 不这么做的话，一个从没点过验证按钮的用户会永远留一条 pending，
- * 之后第一次私聊机器人（本来只是想聊天）会被当成「超时后作答」踢出群。
- */
-export const expireStaleVerifications = async (
+export const getExpiredVerifications = async (
   db: Database,
   now: number
+): Promise<VerificationRow[]> =>
+  await db
+    .select()
+    .from(verifications)
+    .where(
+      or(
+        and(
+          eq(verifications.status, "pending"),
+          lt(verifications.expiresAt, now - 10_000)
+        ),
+        and(
+          eq(verifications.status, "removing"),
+          lt(verifications.resolvedAt, now - REMOVAL_LEASE_MS)
+        )
+      )
+    )
+    .orderBy(asc(verifications.expiresAt))
+    .limit(10);
+
+/** 只取消等待答题的记录，不干扰已经开始执行的移出操作。 */
+export const cancelPendingVerification = async (
+  db: Database,
+  chatId: number,
+  userId: number,
+  status: "left" | "manual"
 ): Promise<void> => {
   await db
     .update(verifications)
-    .set({ status: "expired", resolvedAt: now })
+    .set({ status, resolvedAt: Date.now() })
     .where(
       and(
-        eq(verifications.status, "pending"),
-        lt(verifications.expiresAt, now - STALE_PENDING_MS)
+        eq(verifications.chatId, chatId),
+        eq(verifications.userId, userId),
+        eq(verifications.status, "pending")
+      )
+    );
+};
+
+export const claimVerificationRemoval = async (
+  db: Database,
+  token: string,
+  now: number
+): Promise<boolean> => {
+  const rows = await db
+    .update(verifications)
+    .set({ status: "removing", resolvedAt: now })
+    .where(
+      and(
+        eq(verifications.token, token),
+        or(
+          eq(verifications.status, "pending"),
+          and(
+            eq(verifications.status, "removing"),
+            lt(verifications.resolvedAt, now - REMOVAL_LEASE_MS)
+          )
+        )
+      )
+    )
+    .returning({ token: verifications.token });
+
+  return rows.length > 0;
+};
+
+export const finishVerificationRemoval = async (
+  db: Database,
+  token: string,
+  claimedAt: number,
+  status: string
+): Promise<void> => {
+  await db
+    .update(verifications)
+    .set({ status, resolvedAt: Date.now() })
+    .where(
+      and(
+        eq(verifications.token, token),
+        eq(verifications.status, "removing"),
+        eq(verifications.resolvedAt, claimedAt)
       )
     );
 };
@@ -108,7 +166,7 @@ export const createVerification = async (
         and(
           eq(verifications.chatId, input.chatId),
           eq(verifications.userId, input.userId),
-          eq(verifications.status, "pending")
+          inArray(verifications.status, ["pending", "removing"])
         )
       ),
     db.insert(verifications).values({ ...input, status: "pending" }),

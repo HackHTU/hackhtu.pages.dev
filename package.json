@@ -36,6 +36,7 @@
   "devDependencies": {
     "@cloudflare/workers-types": "catalog:",
     "@shadcn/lint": "catalog:",
+    "@types/bun": "^1.4.4",
     "@types/node": "catalog:",
     "oxfmt": "catalog:",
     "oxlint": "catalog:",

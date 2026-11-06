@@ -7,6 +7,7 @@ import { getConfig, hasText } from "./config";
 import type { Bindings } from "./env";
 import { checkRssFeeds, maybeCheckRss } from "./features/rss";
 import { handleUpdate } from "./handlers/update";
+import { sweepExpiredVerifications } from "./handlers/verification-sweep";
 import { logError, logInfo, logWarn, setLogLevel } from "./lib/log";
 import type { LogFields } from "./lib/log";
 import { getBot } from "./lib/telegram";
@@ -154,7 +155,7 @@ app.post("/bot/webhook/:secret", async (c) => {
   const config = getConfig(c.env);
   const { origin } = new URL(c.req.url);
 
-  // RSS 检查不阻塞 webhook 响应，由 waitUntil 延长生命周期。
+  // 验证清扫和 RSS 检查不阻塞 webhook 响应，由 waitUntil 延长生命周期。
   c.executionCtx.waitUntil(
     (async (): Promise<void> => {
       try {
@@ -206,6 +207,7 @@ app.post("/bot/cron/rss", async (c) => {
   const config = getConfig(c.env);
   const startedAt = Date.now();
 
+  await sweepExpiredVerifications(bot, db);
   await checkRssFeeds(bot, db, config);
 
   logInfo("cron.rss.done", { ms: Date.now() - startedAt });

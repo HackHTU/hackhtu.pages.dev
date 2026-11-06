@@ -3,9 +3,10 @@ import type { Bot } from "grammy";
 import type { CallbackQuery } from "grammy/types";
 
 import { logInfo, logWarn } from "../lib/log";
-import { isAdmin, kickMember, unmuteMember } from "../lib/telegram";
+import { isAdmin, unmuteMember } from "../lib/telegram";
 import { displayName, mention } from "./verification-shared";
 import { getVerification, setVerificationStatus } from "./verification-store";
+import { removeUnverifiedMember } from "./verification-sweep";
 
 const ADMIN_ACTION = /^va:(?<token>[0-9a-f]{32}):(?<action>unmute|kick)$/u;
 
@@ -114,32 +115,32 @@ const handleAdminAction = async (
     return;
   }
 
-  const claimed = await setVerificationStatus(db, token, "kicked", Date.now());
-
-  if (!claimed) {
-    await answer("这条验证已经处理过了。", false);
-
-    return;
-  }
-
   logInfo("verification.admin.kick", {
     chatId: row.chatId,
     userId: row.userId,
     adminId: query.from.id,
   });
 
-  try {
-    await kickMember(bot, row.chatId, row.userId);
-    await bot.api.sendMessage(
-      row.chatId,
-      `${mention(row.userId, name)} 已被管理员移出群聊。`,
-      { parse_mode: "HTML" }
-    );
-  } catch (error) {
-    logWarn("verification.admin.kick.failed", { chatId: row.chatId }, error);
+  const removed = await removeUnverifiedMember(bot, db, row, "kicked");
+
+  if (removed) {
+    try {
+      await bot.api.sendMessage(
+        row.chatId,
+        `${mention(row.userId, name)} 已被管理员移出群聊。`,
+        { parse_mode: "HTML" }
+      );
+    } catch (error) {
+      logWarn("verification.admin.kick.failed", { chatId: row.chatId }, error);
+    }
   }
 
-  await answer("已移出群聊。", false);
+  await answer(
+    removed
+      ? "已移出群聊，可重新加入。"
+      : "未执行移出，请检查成员状态和机器人权限。",
+    !removed
+  );
 };
 
 /**

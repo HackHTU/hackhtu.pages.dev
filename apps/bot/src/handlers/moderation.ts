@@ -31,7 +31,12 @@ const resolvePending = async (
       and(
         eq(verifications.chatId, chatId),
         eq(verifications.userId, userId),
-        inArray(verifications.status, ["pending", "expired", "failed"])
+        inArray(verifications.status, [
+          "pending",
+          "removing",
+          "expired",
+          "failed",
+        ])
       )
     );
 };

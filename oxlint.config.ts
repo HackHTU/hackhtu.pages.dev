@@ -30,6 +30,19 @@ export default defineConfig({
   ],
   jsPlugins: [...jsPlugins.jsPlugins, ...shadcn.jsPlugins],
   options: { typeAware: true },
+  overrides: [
+    {
+      files: ["apps/bot/tests/**/*.test.ts"],
+      rules: {
+        // Bot 测试使用 bun:test，不自动注入未安装的 Vitest。
+        "vitest/prefer-importing-vitest-globals": "off",
+        // 内存 SQLite 和 Telegram API 替身仅暴露被测路径需要的接口。
+        "typescript/no-unsafe-type-assertion": "off",
+        // 模拟 API 保持 Promise 接口，避免 require-await 与自动 async 修复相互冲突。
+        "require-await": "off",
+      },
+    },
+  ],
   rules: {
     "max-lines": ["error", { max: 500 }],
   },
