@@ -204,7 +204,6 @@ export const PassCardScreen = ({
                             src={data.img}
                             alt="头像"
                           />
-                          <span className="htu-avatar-tip">更换头像</span>
                         </button>
                       ) : (
                         <img

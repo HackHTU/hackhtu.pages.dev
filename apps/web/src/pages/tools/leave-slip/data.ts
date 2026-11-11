@@ -42,7 +42,7 @@ export const SESSION_STORAGE_KEY = "leave-slip-session-data";
 export const TEMPLATE_STORAGE_KEY = "leave-slip-template";
 
 /** 截图预览的默认尺寸（px）。 */
-export const DEFAULT_PREVIEW_WIDTH = 420;
+export const DEFAULT_PREVIEW_WIDTH = 450;
 export const DEFAULT_PREVIEW_HEIGHT = 800;
 
 /** 截图预览允许的最小/最大宽度与高度（px）。 */
